@@ -8,8 +8,16 @@ function TourDetails() {
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [guestSize, setGuestSize] = useState(1);
+  
+  // 1. Thêm State để điều khiển Pop-up và lưu thông tin User
+  const [showModal, setShowModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    // Lấy thông tin user ngay khi load trang
+    const userString = localStorage.getItem('user');
+    if (userString) setCurrentUser(JSON.parse(userString));
+
     const fetchTourDetail = async () => {
       try {
         const response = await axios.get(`http://127.0.0.1:5000/api/tours/${id}`);
@@ -25,32 +33,29 @@ function TourDetails() {
     fetchTourDetail();
   }, [id]);
 
-  // HÀM XỬ LÝ ĐẶT TOUR THẬT (GỌI XUỐNG DATABASE)
-  const handleBooking = async () => {
-    const userString = localStorage.getItem('user');
-    
-    // 1. Kiểm tra đã đăng nhập chưa
-    if (!userString) {
+  // 2. NÚT BẤM BÊN NGOÀI: CHỈ ĐỂ MỞ POP-UP KIỂM TRA
+  const handleOpenModal = () => {
+    if (!currentUser) {
       alert('Thái ơi, bạn cần đăng nhập để đặt tour nhé!');
       navigate('/login');
       return;
     }
+    setShowModal(true);
+  };
 
-    const userData = JSON.parse(userString);
-
+  // 3. NÚT XÁC NHẬN BÊN TRONG POP-UP: GỌI XUỐNG DATABASE
+  const confirmBooking = async () => {
     try {
-      // 2. Gửi lệnh tạo đơn hàng (Booking) xuống Backend
       const response = await axios.post('http://127.0.0.1:5000/api/bookings', {
         tourId: tour._id,
-        userId: userData._id,
+        userId: currentUser._id,
         guestSize: guestSize,
         totalPrice: tour.price * guestSize
       });
 
       if (response.data.success) {
-        // 3. Thành công thì lấy ID đơn hàng và nhảy sang trang Thanh Toán
+        setShowModal(false); // Đóng pop-up
         const newBookingId = response.data.data._id;
-        alert('Đã khởi tạo đơn hàng thành công! Đang chuyển sang trang thanh toán...');
         navigate(`/payment/${newBookingId}`);
       }
     } catch (error) {
@@ -63,13 +68,12 @@ function TourDetails() {
   if (!tour) return <div className="text-center pt-5 mt-5"><h2>Không tìm thấy Tour!</h2></div>;
 
   return (
-    <main className="content pt-4 pb-5 bg-light">
+    <main className="content pt-4 pb-5 bg-light position-relative">
       <div className="container">
-        <Link to="/" className="text-decoration-none text-secondary mb-3 d-inline-block hover-info">
+        <Link to="/tour-trong-nuoc" className="text-decoration-none text-secondary mb-3 d-inline-block hover-info">
           <i className="bi bi-arrow-left me-2"></i> Quay lại danh sách
         </Link>
 
-        {/* Tiêu đề dễ đọc */}
         <h1 className="fw-bold text-info mb-4" style={{ fontFamily: 'sans-serif', lineHeight: '1.3' }}>
           {tour.title}
         </h1>
@@ -87,7 +91,7 @@ function TourDetails() {
                 }}
               />
             </div>
-            <div className="bg-white p-4 rounded-4 shadow-sm">
+            <div className="bg-white p-4 rounded-4 shadow-sm mb-4">
               <h4 className="text-info border-bottom pb-2 mb-3">Tổng quan chuyến đi</h4>
               <p className="fs-5 text-secondary" style={{ whiteSpace: 'pre-line' }}>{tour.description}</p>
             </div>
@@ -110,8 +114,8 @@ function TourDetails() {
                   <span className="text-danger fw-bold fs-4">{(tour.price * guestSize).toLocaleString('vi-VN')} ₫</span>
                 </div>
 
-                {/* NÚT BẤM ĐÃ CÓ onClick */}
-                <button onClick={handleBooking} className="btn btn-danger w-100 rounded-pill py-3 fw-bold shadow">
+                {/* ĐỔI THÀNH HÀM MỞ POP-UP */}
+                <button onClick={handleOpenModal} className="btn btn-danger w-100 rounded-pill py-3 fw-bold shadow">
                   <i className="bi bi-cart-check me-2"></i> ĐẶT TOUR NGAY
                 </button>
               </div>
@@ -119,6 +123,51 @@ function TourDetails() {
           </div>
         </div>
       </div>
+
+      {/* --- MODAL (POP-UP) XÁC NHẬN THÔNG TIN --- */}
+      {showModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg">
+              <div className="modal-header bg-info text-white rounded-top-4">
+                <h5 className="modal-title fw-bold"><i className="bi bi-info-circle me-2"></i>Xác nhận thông tin</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <p className="text-muted small mb-4">Vui lòng kiểm tra lại thông tin liên lạc trước khi chuyển sang trang thanh toán.</p>
+                
+                {/* TỰ ĐỘNG ĐIỀN THÔNG TIN TỪ LOCALSTORAGE */}
+                <div className="mb-3">
+                  <label className="small fw-bold text-secondary">Họ và tên người đặt</label>
+                  <input type="text" className="form-control bg-light" value={currentUser?.name} readOnly />
+                </div>
+                <div className="mb-3">
+                  <label className="small fw-bold text-secondary">Số điện thoại</label>
+                  <input type="text" className="form-control bg-light" value={currentUser?.phone || 'Chưa cập nhật'} readOnly />
+                </div>
+                <div className="mb-4">
+                  <label className="small fw-bold text-secondary">Email</label>
+                  <input type="text" className="form-control bg-light" value={currentUser?.email} readOnly />
+                </div>
+
+                <div className="border-top pt-3 mb-2 d-flex justify-content-between">
+                  <span className="fw-bold">Số khách:</span>
+                  <span className="fw-bold">{guestSize} người</span>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span className="fw-bold">Số tiền cần thanh toán:</span>
+                  <span className="text-danger fw-bold fs-5">{(tour.price * guestSize).toLocaleString('vi-VN')} ₫</span>
+                </div>
+              </div>
+              <div className="modal-footer border-0 p-4 pt-0">
+                <button type="button" className="btn btn-light rounded-pill fw-bold w-100 mb-2" onClick={() => setShowModal(false)}>HỦY BỎ</button>
+                {/* NÚT XÁC NHẬN CHÍNH THỨC */}
+                <button type="button" className="btn btn-danger rounded-pill fw-bold w-100 m-0" onClick={confirmBooking}>XÁC NHẬN ĐẶT TOUR</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

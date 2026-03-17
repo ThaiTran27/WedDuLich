@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  // Lấy thêm phone từ form gửi lên
+  const { name, email, password, phone } = req.body; 
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -13,8 +14,8 @@ const register = async (req, res) => {
       });
     }
 
-    // Tạo user (lúc này hàm pre-save ở Model User.js sẽ tự chạy để mã hóa pass)
-    await User.create({ name, email, password });
+    // Truyền thêm phone vào để tạo user
+    await User.create({ name, email, password, phone });
 
     res.status(201).json({ 
       success: true, 

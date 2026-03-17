@@ -13,6 +13,10 @@ const Account = lazy(() => import('./pages/Account'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const TourList = lazy(() => import('./pages/TourList'));
+const About = lazy(() => import('./pages/About'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogDetail = lazy(() => import('./pages/BlogDetail'));
 
 function App() {
   return (
@@ -38,6 +42,10 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/tours/:id" element={<TourDetails />} />
+              <Route path="/tour-trong-nuoc" element={<TourList />} />
+              <Route path="/gioi-thieu" element={<About />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogDetail />} />
               
               {/* --- CÁC TRANG CẦN ĐĂNG NHẬP THƯỜNG --- */}
               <Route path="/tai-khoan" element={<Account />} />

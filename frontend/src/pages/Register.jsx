@@ -4,7 +4,8 @@ import axios from 'axios';
 
 function Register() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  // Đã thêm phone vào state
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,7 +16,6 @@ function Register() {
     setLoading(true);
     setError('');
     try {
-      // ĐỔI THÀNH /api/auth/register
       const response = await axios.post('http://127.0.0.1:5000/api/auth/register', formData);
       if (response.data.success) {
         alert('Đăng ký thành công!');
@@ -44,18 +44,28 @@ function Register() {
               <label className="small fw-bold text-secondary">Họ và tên</label>
               <input type="text" className="form-control rounded-pill bg-light border-0" placeholder="Trần Minh Thái" onChange={(e)=>setFormData({...formData, name: e.target.value})} required />
             </div>
+            
             <div className="mb-3">
               <label className="small fw-bold text-secondary">Email</label>
               <input type="email" className="form-control rounded-pill bg-light border-0" placeholder="thai2026@gmail.com" onChange={(e)=>setFormData({...formData, email: e.target.value})} required />
             </div>
+
+            {/* Ô NHẬP SỐ ĐIỆN THOẠI ĐƯỢC THÊM VÀO ĐÂY */}
+            <div className="mb-3">
+              <label className="small fw-bold text-secondary">Số điện thoại</label>
+              <input type="tel" className="form-control rounded-pill bg-light border-0" placeholder="(+84) 778 118 008" onChange={(e)=>setFormData({...formData, phone: e.target.value})} required />
+            </div>
+
             <div className="mb-3">
               <label className="small fw-bold text-secondary">Mật khẩu</label>
               <input type="password" className="form-control rounded-pill bg-light border-0" placeholder="••••••" onChange={(e)=>setFormData({...formData, password: e.target.value})} required />
             </div>
+            
             <div className="mb-4">
               <label className="small fw-bold text-secondary">Xác nhận mật khẩu</label>
               <input type="password" className="form-control rounded-pill bg-light border-0" placeholder="••••••" onChange={(e)=>setFormData({...formData, confirmPassword: e.target.value})} required />
             </div>
+            
             <button type="submit" className="btn btn-info text-white w-100 rounded-pill fw-bold shadow-sm" disabled={loading}>ĐĂNG KÝ NGAY</button>
           </form>
           <p className="text-center mt-3 mb-0 small text-muted">Đã có tài khoản? <Link to="/login" className="text-info fw-bold text-decoration-none">Đăng nhập</Link></p>

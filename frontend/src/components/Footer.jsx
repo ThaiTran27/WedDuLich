@@ -48,7 +48,7 @@ function Footer() {
         </div>
         
         <hr className="my-4 border-secondary" />
-        <p className="text-center small text-secondary mb-0">© 2026 Du lịch Việt. Thiết kế bởi Trần Minh Thái - IUH.</p>
+        <p className="text-center small text-secondary mb-0">© 2026 Du lịch Việt.</p>
       </div>
     </footer>
   );

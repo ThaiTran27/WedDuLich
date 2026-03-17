@@ -19,8 +19,9 @@ const createBooking = async (req, res) => {
 // [GET] /api/bookings - Lấy danh sách tất cả các đơn đặt (Dành cho Admin)
 const getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().populate('userId', 'name email').populate('tourId', 'title');
-    // .populate() giúp lấy luôn tên người dùng và tên tour thay vì chỉ lấy ID
+    const bookings = await Booking.find()
+      .populate('userId', 'name email phone') 
+      .populate('tourId', 'title price');
     
     res.status(200).json({ success: true, data: bookings });
   } catch (error) {
@@ -48,5 +49,20 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-// Export tất cả các controller functions
-module.exports = { createBooking, getAllBookings, updatePaymentStatus };
+// [GET] /api/bookings/user/:userId - Lấy đơn hàng của MỘT người dùng cụ thể
+const getUserBookings = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    // Tìm đơn hàng theo ID của user, lấy thêm thông tin Tour và sắp xếp mới nhất lên đầu
+    const bookings = await Booking.find({ userId })
+      .populate('tourId', 'title image price duration')
+      .sort({ createdAt: -1 }); 
+      
+    res.status(200).json({ success: true, data: bookings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy lịch sử đặt tour' });
+  }
+};
+
+// Nhớ export thêm getUserBookings nhé:
+module.exports = { createBooking, getAllBookings, updatePaymentStatus, getUserBookings };
