@@ -2,15 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ensure navbar brand is always visible above page content */
-.navbar {
-  z-index: 9999 !important;
+/* CHIÊU CUỐI: ÉP HIỆN MENU TRÊN MÁY TÍNH */
+@media (min-width: 992px) {
+  #navmenu {
+    display: flex !important; /* Ép buộc dùng Flexbox */
+    flex-basis: auto !important;
+    visibility: visible !important; /* Ép buộc hiển thị */
+    opacity: 1 !important; /* Ép buộc không trong suốt */
+    height: auto !important;
+  }
+  
+  .navbar-toggler {
+    display: none !important; /* Giấu cái nút 3 gạch đi khi ở màn hình lớn */
+  }
+
+  .nav-link {
+    color: white !important; /* Ép chữ phải màu trắng */
+    display: block !important;
+  }
 }
 
-.navbar-brand {
-  color: #fff !important;
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
-  display: inline-flex !important;
-  align-items: center;
-  white-space: nowrap;
+/* Đảm bảo thanh Navbar đủ cao để thấy chữ */
+.navbar {
+  min-height: 80px;
+  z-index: 9999;
 }
