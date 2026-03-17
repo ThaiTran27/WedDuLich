@@ -2,12 +2,9 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Xử lý ĐĂNG KÝ
-exports.register = async (req, res) => {
+const register = async (req, res) => {
+  const { name, email, password } = req.body;
   try {
-    const { name, email, password } = req.body;
-
-    // Kiểm tra xem email đã tồn tại chưa
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ 
@@ -21,41 +18,39 @@ exports.register = async (req, res) => {
 
     res.status(201).json({ 
       success: true, 
-      message: 'Đăng ký thành công mỹ mãn!' 
+      message: 'Đăng ký thành công!' 
     });
-
   } catch (error) {
-    console.error("Lỗi đăng ký:", error.message);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Lỗi server nội bộ: ' + error.message 
-    });
+    res.status(500).json({ success: false, message: "Lỗi server khi đăng ký" });
   }
 };
 
-// Xử lý ĐĂNG NHẬP (Giữ nguyên như cũ)
-exports.login = async (req, res) => {
+const login = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const { email, password } = req.body;
     const user = await User.findOne({ email });
-
     if (!user) {
-      return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại!' });
+      return res.status(404).json({ success: false, message: "Email không tồn tại!" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Mật khẩu sai rồi bạn ơi!' });
+    // SO SÁNH MẬT KHẨU (Quan trọng nhất)
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ success: false, message: "Mật khẩu sai rồi bạn ơi!" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret123', { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '15d' });
 
     res.status(200).json({
       success: true,
-      data: { _id: user._id, name: user.name, email: user.email, role: user.role },
-      token
+      message: "Đăng nhập thành công",
+      token,
+      data: user
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi server đăng nhập!' });
+    res.status(500).json({ success: false, message: "Lỗi server" });
   }
 };
+
+module.exports = { register, login };

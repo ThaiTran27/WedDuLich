@@ -2,51 +2,61 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar'; 
 import Footer from './components/Footer'; 
+import ProtectedRoute from './components/ProtectedRoute'; // Import người gác cổng
 
+// Lazy loading các trang để tối ưu tốc độ
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
 const TourDetails = lazy(() => import('./pages/TourDetails'));
 const PaymentSandbox = lazy(() => import('./pages/PaymentSandbox'));
 const Account = lazy(() => import('./pages/Account'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* THANH ĐIỀU HƯỚNG SẼ LUÔN HIỂN THỊ Ở TRÊN CÙNG */}
+      <div className="min-vh-100 d-flex flex-column bg-light">
+        {/* THANH ĐIỀU HƯỚNG */}
         <Navbar />
 
-        {/* PHẦN NỘI DUNG CHÍNH SẼ THAY ĐỔI KHI CHUYỂN TRANG */}
-        <main className="flex-grow pt-20">
+        {/* NỘI DUNG CHÍNH */}
+        <main className="flex-grow-1">
           <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-xl font-semibold text-blue-500 animate-pulse">Đang tải trang...</div>
+            <div className="vh-100 d-flex align-items-center justify-content-center">
+              <div className="text-center">
+                <div className="spinner-border text-info mb-3" role="status"></div>
+                <div className="fs-5 fw-bold text-info animate-pulse">Đang tải trang...</div>
+              </div>
             </div>
           }>
             <Routes>
-              {/* Trang chủ */}
+              {/* --- CÁC TRANG CÔNG KHAI (AI CŨNG XEM ĐƯỢC) --- */}
               <Route path="/" element={<Home />} />
-              
-              {/* Hệ thống tài khoản */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/tai-khoan" element={<Account />} />
+              <Route path="/tours/:id" element={<TourDetails />} />
               
-              {/* Quản lý Tour & Đặt hàng */}
-              <Route path="/tour/:id" element={<TourDetails />} />
+              {/* --- CÁC TRANG CẦN ĐĂNG NHẬP THƯỜNG --- */}
+              <Route path="/tai-khoan" element={<Account />} />
               <Route path="/payment/:bookingId" element={<PaymentSandbox />} />
               
-              {/* Trang quản trị */}
-              <Route path="/admin" element={<Dashboard />} />
+              {/* --- TRANG QUẢN TRỊ (CHỈ ADMIN MỚI VÀO ĐƯỢC) --- */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </Suspense>
         </main>
 
-        {/* CHÂN TRANG SẼ LUÔN HIỂN THỊ Ở DƯỚI CÙNG CỦA MỌI TRANG */}
+        {/* CHÂN TRANG */}
         <Footer />
       </div>
     </Router>

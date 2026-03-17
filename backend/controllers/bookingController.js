@@ -16,23 +16,26 @@ const createBooking = async (req, res) => {
   }
 };
 
-// [GET] /api/bookings - Lấy danh sách tất cả các đơn đặt (Admin)
+// [GET] /api/bookings - Lấy danh sách tất cả các đơn đặt (Dành cho Admin)
 const getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find().populate('userId', 'name email').populate('tourId', 'title');
+    // .populate() giúp lấy luôn tên người dùng và tên tour thay vì chỉ lấy ID
+    
     res.status(200).json({ success: true, data: bookings });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách booking' });
   }
 };
 
-// [PUT] /api/bookings/:id/pay - Cập nhật trạng thái thanh toán
+// [PUT] /api/bookings/:id/pay - Cập nhật trạng thái thanh toán thành công
 const updatePaymentStatus = async (req, res) => {
   try {
+    // Tìm đơn hàng theo ID và cập nhật status thành 'paid'
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id, 
       { status: 'paid' }, 
-      { new: true }
+      { new: true } // Trả về dữ liệu mới sau khi cập nhật
     );
 
     if (!updatedBooking) {
@@ -45,4 +48,5 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
+// Export tất cả các controller functions
 module.exports = { createBooking, getAllBookings, updatePaymentStatus };

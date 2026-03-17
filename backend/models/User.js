@@ -6,19 +6,26 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   phone: { type: String, default: "" },
-  role: { type: String, default: "customer" }
+  role: { type: String, default: "customer" } // Mặc định là khách hàng
 }, { timestamps: true });
 
-// SỬA TẠI ĐÂY: Dùng async function() và KHÔNG có tham số next
-userSchema.pre('save', async function() {
-  // Nếu mật khẩu không bị thay đổi thì không cần mã hóa lại
-  if (!this.isModified('password')) return;
+// Middleware tự động mã hóa mật khẩu trước khi lưu
+userSchema.pre('save', async function () {
+  // 1. Kiểm tra xem mật khẩu có bị thay đổi không (hoặc là tạo mới không)
+  // Nếu không thay đổi (ví dụ chỉ đổi số điện thoại) thì bỏ qua mã hóa
+  if (!this.isModified('password')) {
+    return;
+  }
 
-  // Mã hóa mật khẩu
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  
-  // Không cần gọi next() vì là hàm async
+  try {
+    // 2. Tạo muối (salt)
+    const salt = await bcrypt.genSalt(10);
+    
+    // 3. Mã hóa mật khẩu hiện tại với muối vừa tạo
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    throw error; // Throw error nếu có lỗi
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);

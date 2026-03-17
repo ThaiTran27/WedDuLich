@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 function Navbar() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const userString = localStorage.getItem('user');
@@ -12,10 +13,18 @@ function Navbar() {
     }
   }, []);
 
+  useEffect(() => {
+    // Close dropdown when user logs out so it doesn't stay open
+    if (!user) {
+      setIsDropdownOpen(false);
+    }
+  }, [user]);
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setUser(null);
+    setIsDropdownOpen(false);
     alert('Đã đăng xuất!');
     navigate('/login');
   };
@@ -59,12 +68,32 @@ function Navbar() {
           <div className="d-flex align-items-center">
             {user ? (
               <div className="dropdown">
-                <button className="btn btn-outline-info text-white rounded-pill dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown">
+                <button
+                  className="btn btn-outline-info text-white rounded-pill dropdown-toggle fw-bold"
+                  type="button"
+                  onClick={() => setIsDropdownOpen((v) => !v)}
+                  aria-expanded={isDropdownOpen}
+                >
                   Chào, {user.name.split(' ').pop()}
                 </button>
-                <ul className="dropdown-menu dropdown-menu-end shadow">
-                  <li><Link className="dropdown-item fw-bold" to="/tai-khoan">Hồ sơ</Link></li>
-                  <li><button className="dropdown-item fw-bold text-danger" onClick={handleLogout}>Đăng xuất</button></li>
+                <ul className={`dropdown-menu dropdown-menu-end shadow ${isDropdownOpen ? 'show' : ''}`}>
+                  <li>
+                    <Link
+                      className="dropdown-item fw-bold"
+                      to="/tai-khoan"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      Hồ sơ
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item fw-bold text-danger"
+                      onClick={handleLogout}
+                    >
+                      Đăng xuất
+                    </button>
+                  </li>
                 </ul>
               </div>
             ) : (

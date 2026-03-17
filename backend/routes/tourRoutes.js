@@ -1,9 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const { createTour, getAllTours, getTourById } = require('../controllers/tourController'); // <-- Thêm getTourById
-// Khai báo đường dẫn
-router.post('/', createTour); // Dùng POST để tạo mới
-router.get('/', getAllTours); // Dùng GET để lấy dữ liệu
-router.get('/:id', getTourById); // <-- THÊM DÒNG NÀY: Dấu :id để nhận biết ID truyền vào
+const { 
+  createTour, 
+  getAllTours, 
+  getTourById, 
+  updateTour, 
+  deleteTour, 
+  getTourBySearch 
+} = require('../controllers/tourController');
+
+// 1. Tìm kiếm tour (Lưu ý: Phải để route 'search' lên trên ':id' để tránh bị hiểu nhầm 'search' là 1 cái ID)
+router.get('/search/getTourBySearch', getTourBySearch);
+
+// 2. Lấy toàn bộ danh sách tour
+router.get('/', getAllTours);
+
+// 3. Tạo tour mới (Admin)
+router.post('/', createTour);
+
+// 4. Lấy chi tiết 1 tour theo ID
+router.get('/:id', getTourById);
+
+// 5. Cập nhật thông tin tour (Admin)
+router.put('/:id', updateTour);
+
+// 6. Xóa tour (Admin)
+router.delete('/:id', deleteTour);
 
 module.exports = router;
