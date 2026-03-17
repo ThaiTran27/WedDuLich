@@ -1,0 +1,65 @@
+input[type="file"] {
+    display: none;
+}
+.btn_avatar {
+    background-color: #007bff;
+    color: white;
+    padding: 5px 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.btn_avatar:hover {
+    background-color: #0056b3;
+}
+.btn_update {
+    text-align: right;
+}
+
+#erro_ten, #erro_email, #erro_sdt, #erro_diachi, #erro_ngaysinh, #erro_cmnd_cccd, #erro_ngaycap, #erro_passport, #erro_ngayhethan, #erro_mk, #erro_mkmoi, #erro_nhaplaimk{
+    color: red;
+    font-size: small;
+    height: 20px;
+}
+
+/* responsive for desktop */
+@media (min-width: 1200px) {
+    .div_avatar {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .form_item {
+        width: 40%;
+        margin: 0 5%;
+        float: left;
+    }
+    .btn_update{
+        clear: both;
+        margin-right: 5%;
+    }
+    .card {
+    margin-bottom: 30px;
+    }
+}
+
+/* responsive for mobile  */
+@media (max-width: 768px) {
+    .card {
+    margin-bottom: 10px;
+    }
+    .card_taikhoan {
+        width: 50%;
+        font-size: small;
+    }
+    .card_thongtin {
+        width: 100%;
+    }
+    #muc_tai_khoan {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+} 

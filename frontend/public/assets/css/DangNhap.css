@@ -1,0 +1,39 @@
+hr {
+  border: 1px dashed #ccc;
+}
+.dk {
+  padding: 10px 20px;
+  margin: 5px;
+  border-radius: 10px;
+  text-align: center;
+  width: 100%;
+}
+.dk a {
+  color: white;
+  text-decoration: none;
+}
+#btndn {
+  background-image: linear-gradient(to bottom, #fbc773, #d7ab64);
+  color: white;
+  padding: 10px 20px;
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+}
+.content button:hover {
+  background-image: linear-gradient(to bottom, #d7ab64, #fbc773, #d7ab64);
+}
+.content form {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding-top: 50px;
+  color: #e19f33;
+}
+#erro_name,
+#erro_email_sdt,
+#erro_password,
+#erro_confirm_password {
+  color: red;
+  font-size: small;
+}

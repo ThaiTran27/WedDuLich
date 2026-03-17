@@ -1,70 +1,172 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 function PaymentSandbox() {
-  const { bookingId } = useParams();
+  const { bookingId } = useParams(); // Lấy mã đơn hàng từ URL
   const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
+  // Lấy thông tin đơn hàng để hiển thị số tiền cần thanh toán
+  useEffect(() => {
+    const fetchBookingDetails = async () => {
+      try {
+        // Giả sử bạn có API lấy chi tiết 1 booking (nếu chưa có, bạn có thể gọi API lấy tất cả rồi lọc ra)
+        const response = await axios.get('http://127.0.0.1:5000/api/bookings');
+        const currentBooking = response.data.data.find(b => b._id === bookingId);
+        
+        if (currentBooking) {
+          setBooking(currentBooking);
+        } else {
+          alert('Không tìm thấy đơn hàng hợp lệ!');
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Lỗi lấy thông tin đơn hàng:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookingDetails();
+  }, [bookingId, navigate]);
+
+  // Hàm xử lý thanh toán giả lập
   const handlePayment = async () => {
-    setIsProcessing(true);
+    setProcessing(true);
+    
     try {
-      // Gọi API cập nhật trạng thái thanh toán
-      await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}/pay`);
-      
-      // Giả lập thời gian load của ngân hàng (2 giây)
+      // 1. Gọi API cập nhật trạng thái đơn hàng thành 'paid' ở Backend
+      // (Lưu ý: Bạn cần chắc chắn Backend có API này, ví dụ: PUT /api/bookings/:id)
+      await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}`, {
+        status: 'paid'
+      });
+
+      // 2. Giả lập thời gian chờ của ngân hàng (2 giây)
       setTimeout(() => {
-        alert('✅ Thanh toán thành công! Chúc bạn có một chuyến đi vui vẻ!');
-        navigate('/'); // Đưa khách về trang chủ
+        setProcessing(false);
+        setPaymentSuccess(true);
+        
+        // 3. Tự động chuyển về trang Tài khoản (Lịch sử) sau khi báo thành công
+        setTimeout(() => {
+          navigate('/tai-khoan');
+        }, 2000);
       }, 2000);
 
     } catch (error) {
-      console.error('Lỗi thanh toán:', error);
-      alert('Thanh toán thất bại!');
-      setIsProcessing(false);
+      console.error('Lỗi khi thanh toán:', error);
+      alert('Giao dịch thất bại, vui lòng thử lại!');
+      setProcessing(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-vh-100 d-flex justify-content-center align-items-center pt-5 bg-light">
+        <div className="spinner-border text-info" style={{width: '3rem', height: '3rem'}} role="status"></div>
+      </div>
+    );
+  }
+
+  if (!booking) return null;
+
   return (
-    <div className="min-h-screen bg-gray-200 flex items-center justify-center p-4">
-      <div className="bg-white max-w-md w-full rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header Cổng thanh toán */}
-        <div className="bg-blue-800 p-6 text-center">
-          <h2 className="text-2xl font-bold text-white tracking-widest">SANDBOX PAYMENT</h2>
-          <p className="text-blue-200 text-sm mt-1">Môi trường thử nghiệm thanh toán</p>
-        </div>
+    <main className="content bg-light" style={{ minHeight: '100vh', paddingTop: '120px', paddingBottom: '60px' }}>
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-8 col-lg-6">
+            
+            {/* THẺ HIỂN THỊ TRẠNG THÁI THANH TOÁN THÀNH CÔNG */}
+            {paymentSuccess ? (
+              <div className="card border-0 shadow-lg rounded-4 overflow-hidden text-center p-5">
+                <div className="mb-4">
+                  <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '5rem' }}></i>
+                </div>
+                <h2 className="fw-bold text-success mb-3">Thanh toán thành công!</h2>
+                <p className="text-secondary fs-5">Cảm ơn bạn đã tin tưởng hệ thống của chúng tôi.</p>
+                <p className="text-muted small">Hệ thống sẽ tự động chuyển về trang Lịch sử đơn hàng...</p>
+                <div className="spinner-grow text-success mt-3" role="status" style={{width: '1.5rem', height: '1.5rem'}}></div>
+              </div>
+            ) : (
+              /* THẺ HIỂN THỊ CỔNG THANH TOÁN */
+              <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div className="bg-dark text-white p-4 text-center">
+                  <h3 className="font_DPTBlacksword mb-0 fs-2">Cổng Thanh Toán</h3>
+                  <p className="mb-0 text-info font-monospace tracking-widest">SANDBOX ENVIRONMENT</p>
+                </div>
+                
+                <div className="card-body p-4 p-md-5">
+                  
+                  {/* Tóm tắt đơn hàng */}
+                  <div className="bg-light p-4 rounded-4 mb-4 border">
+                    <h5 className="fw-bold border-bottom pb-2 mb-3">Tóm tắt đơn hàng</h5>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-secondary">Mã giao dịch:</span>
+                      <span className="fw-bold text-dark">#{booking._id.slice(-8).toUpperCase()}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-secondary">Tour:</span>
+                      <span className="fw-bold text-info text-end" style={{maxWidth: '60%'}}>{booking.tourId?.title || 'Tour du lịch'}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-secondary">Số lượng khách:</span>
+                      <span className="fw-bold text-dark">{booking.guestSize} người</span>
+                    </div>
+                    <hr className="text-muted" />
+                    <div className="d-flex justify-content-between align-items-center mt-3">
+                      <span className="fs-5 fw-bold text-dark">Tổng cần thanh toán:</span>
+                      <span className="fs-3 fw-bold text-danger">{booking.totalPrice.toLocaleString('vi-VN')} ₫</span>
+                    </div>
+                  </div>
 
-        <div className="p-8">
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
-            <p className="font-bold">Lưu ý:</p>
-            <p className="text-sm">Đây là cổng thanh toán giả lập. Sẽ không có giao dịch tiền thật nào diễn ra.</p>
+                  {/* Phương thức thanh toán (Giao diện giả lập) */}
+                  <h5 className="fw-bold mb-3">Chọn phương thức thanh toán</h5>
+                  <div className="d-grid gap-3 mb-4">
+                    <label className="btn btn-outline-secondary text-start p-3 rounded-4 d-flex align-items-center">
+                      <input type="radio" name="paymentMethod" className="form-check-input me-3" defaultChecked />
+                      <i className="bi bi-credit-card-2-front text-primary fs-4 me-3"></i>
+                      <span className="fw-bold text-dark">Thẻ tín dụng / Ghi nợ (Thử nghiệm)</span>
+                    </label>
+                    <label className="btn btn-outline-secondary text-start p-3 rounded-4 d-flex align-items-center opacity-50">
+                      <input type="radio" name="paymentMethod" className="form-check-input me-3" disabled />
+                      <i className="bi bi-wallet2 text-success fs-4 me-3"></i>
+                      <span className="fw-bold text-dark">Ví Momo (Đang bảo trì)</span>
+                    </label>
+                  </div>
+
+                  {/* Nút Xác nhận */}
+                  <button 
+                    className="btn btn-info w-100 rounded-pill py-3 text-white fw-bold fs-5 shadow-sm hover-shadow"
+                    onClick={handlePayment}
+                    disabled={processing}
+                  >
+                    {processing ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Đang xử lý giao dịch...
+                      </>
+                    ) : (
+                      <><i className="bi bi-lock-fill me-2"></i> XÁC NHẬN THANH TOÁN AN TOÀN</>
+                    )}
+                  </button>
+                  
+                  <div className="text-center mt-4">
+                    <Link to="/tai-khoan" className="text-muted text-decoration-none hover-info">
+                      <i className="bi bi-arrow-left me-1"></i> Hủy giao dịch và quay lại
+                    </Link>
+                  </div>
+                  
+                </div>
+              </div>
+            )}
+
           </div>
-
-          <p className="text-gray-600 mb-2">Mã đơn hàng:</p>
-          <p className="font-mono text-lg font-bold text-gray-800 mb-6 bg-gray-100 p-3 rounded">{bookingId}</p>
-
-          <button 
-            onClick={handlePayment}
-            disabled={isProcessing}
-            className={`w-full font-bold py-4 px-6 rounded-xl text-lg transition duration-300 shadow-md ${
-              isProcessing 
-                ? 'bg-gray-400 cursor-not-allowed text-gray-200' 
-                : 'bg-green-500 hover:bg-green-600 text-white transform hover:-translate-y-1'
-            }`}
-          >
-            {isProcessing ? 'Đang xử lý giao dịch...' : 'Xác Nhận Thanh Toán'}
-          </button>
-          
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full mt-4 bg-transparent text-gray-500 font-semibold py-2 px-4 hover:text-red-500 transition"
-          >
-            Hủy giao dịch & Quay lại
-          </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

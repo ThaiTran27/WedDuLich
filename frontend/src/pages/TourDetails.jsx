@@ -4,7 +4,7 @@ import axios from 'axios';
 
 function TourDetails() {
   const { id } = useParams();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,168 +14,115 @@ function TourDetails() {
     const fetchTourDetail = async () => {
       try {
         const response = await axios.get(`http://127.0.0.1:5000/api/tours/${id}`);
-        setTour(response.data.data);
-        setLoading(false);
+        if (response.data.success) {
+          setTour(response.data.data);
+        }
       } catch (error) {
         console.error('Lỗi khi tải chi tiết tour:', error);
+      } finally {
         setLoading(false);
       }
     };
     fetchTourDetail();
   }, [id]);
 
+  // HÀM XỬ LÝ ĐẶT TOUR CHUẨN MERN STACK
   const handleBooking = async () => {
     const userString = localStorage.getItem('user');
+    
+    // 1. Kiểm tra đăng nhập
     if (!userString) {
-      alert('Bạn cần đăng nhập để đặt tour nhé!');
+      alert('Vui lòng đăng nhập để đặt tour!');
       navigate('/login');
       return;
     }
 
-    const user = JSON.parse(userString);
-
-    const bookingData = {
-      userId: user._id,
-      tourId: tour._id,
-      guestSize: guestSize,
-      totalPrice: tour.price * guestSize 
-    };
+    const userData = JSON.parse(userString);
 
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/bookings', bookingData);
+      // 2. Gửi dữ liệu đơn hàng xuống Backend
+      const response = await axios.post('http://127.0.0.1:5000/api/bookings', {
+        tourId: tour._id,
+        userId: userData._id,
+        guestSize: guestSize,
+        totalPrice: tour.price * guestSize
+      });
+
       if (response.data.success) {
-        navigate(`/payment/${response.data.data._id}`);
+        // 3. Nếu thành công, lấy ID đơn hàng mới và chuyển sang trang Thanh Toán
+        const newBookingId = response.data.data._id;
+        navigate(`/payment/${newBookingId}`);
       }
     } catch (error) {
-      console.error('Lỗi đặt tour:', error);
-      alert('Có lỗi xảy ra khi đặt tour. Vui lòng thử lại!');
+      console.error('Lỗi khi đặt tour:', error);
+      alert(error.response?.data?.message || 'Có lỗi xảy ra khi đặt tour!');
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 border-opacity-50"></div>
-    </div>
-  );
-
-  if (!tour) return <div className="text-center mt-20 text-xl text-red-500 font-bold">Không tìm thấy Tour!</div>;
+  if (loading) return <div className="text-center pt-5 mt-5"><div className="spinner-border text-info"></div></div>;
+  if (!tour) return <div className="text-center pt-5 mt-5"><h2>Không tìm thấy tour!</h2></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Nút quay lại */}
-        <Link to="/" className="inline-flex items-center text-gray-500 hover:text-blue-600 font-medium mb-6 transition-colors">
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Quay lại danh sách
+    <main className="content pt-5 mt-5 pb-5 bg-light">
+      <div className="container pt-4">
+        <Link to="/" className="text-decoration-none text-secondary mb-4 d-inline-block hover-info">
+          <i className="bi bi-arrow-left me-2"></i> Quay lại danh sách
         </Link>
 
-        {/* Tiêu đề chính */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">{tour.title}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-gray-600">
-            <span className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Thời gian: {tour.duration}
-            </span>
-            <span className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full">
-              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-              Còn trống: {tour.availableSeats} chỗ
-            </span>
-          </div>
-        </div>
-
-        {/* Layout 2 cột */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* CỘT TRÁI: Ảnh & Mô tả */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Ảnh lớn */}
-            <div className="w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-lg border border-gray-100 bg-white">
-              <img 
-                src={tour.image} 
-                alt={tour.title} 
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-                onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'}
-              />
-            </div>
-
-            {/* Khối Thông tin */}
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-4">Tổng quan chuyến đi</h2>
-              <p className="text-gray-600 text-lg leading-relaxed whitespace-pre-line">
-                {tour.description}
-              </p>
-            </div>
-          </div>
-
-          {/* CỘT PHẢI: Khung Đặt Tour (Sticky) */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl p-8 shadow-2xl border border-gray-100 sticky top-28">
-              
-              <div className="mb-6">
-                <span className="text-gray-500 font-medium block mb-1">Giá trọn gói / Khách</span>
-                <span className="text-4xl font-extrabold text-orange-500 flex items-baseline gap-1">
-                  {tour.price.toLocaleString('vi-VN')} <span className="text-lg text-gray-500 font-normal">₫</span>
+        <div className="row">
+          <div className="col-12 col-lg-8">
+            <div className="row header-content mb-3">
+              <h2 className="font_DPTBlacksword text-info display-5">{tour.title}</h2>
+              <div className="d-flex flex-wrap gap-3 mt-2">
+                <span className="badge bg-white text-dark border p-2 fs-6 rounded-pill shadow-sm">
+                  <i className="bi bi-clock text-info me-1"></i> {tour.duration}
+                </span>
+                <span className="badge bg-white text-dark border p-2 fs-6 rounded-pill shadow-sm">
+                  <i className="bi bi-geo-alt-fill text-danger me-1"></i> {tour.city || 'Việt Nam'}
                 </span>
               </div>
+            </div>
 
-              <div className="space-y-6">
-                {/* Chọn số người */}
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wider block mb-3">Số lượng hành khách</label>
-                  <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-2 shadow-sm">
-                    <button 
-                      onClick={() => setGuestSize(prev => Math.max(1, prev - 1))}
-                      className="w-10 h-10 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center text-xl font-bold transition"
-                    >
-                      -
-                    </button>
-                    <input 
-                      type="number" 
-                      min="1" 
-                      max={tour.availableSeats}
-                      value={guestSize}
-                      onChange={(e) => setGuestSize(Number(e.target.value))}
-                      className="w-16 text-center text-xl font-bold text-gray-900 bg-transparent focus:outline-none"
-                      readOnly
-                    />
-                    <button 
-                      onClick={() => setGuestSize(prev => Math.min(tour.availableSeats, prev + 1))}
-                      className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center text-xl font-bold transition"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
+            <div className="row images-content mb-4">
+              <img src={tour.image} alt={tour.title} className="img-fluid w-100 rounded-4 shadow-sm object-fit-cover" style={{ maxHeight: '450px' }} />
+            </div>
 
-                {/* Tổng tiền */}
-                <div className="flex items-center justify-between py-4 border-t border-b border-dashed border-gray-200">
-                  <span className="text-gray-900 font-bold text-lg">Tổng thanh toán</span>
-                  <span className="text-2xl font-extrabold text-red-600">
-                    {(tour.price * guestSize).toLocaleString('vi-VN')} ₫
-                  </span>
-                </div>
-                
-                {/* Nút Đặt Tour */}
-                <button 
-                  onClick={handleBooking}
-                  className="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-blue-500/30 text-lg flex justify-center items-center gap-2 transform hover:-translate-y-1"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                  Yêu Cầu Đặt Tour
-                </button>
-                <p className="text-center text-xs text-gray-400 mt-4">
-                  Bạn sẽ không bị trừ tiền cho đến khi hoàn tất bước thanh toán.
-                </p>
+            <div className="row bg-white p-4 rounded-4 shadow-sm mb-4">
+              <h3 className="text-info border-bottom pb-2 mb-3">Tổng quan chuyến đi</h3>
+              <div className="lichtrinh col-12 text-secondary fs-5" style={{ lineHeight: '1.8', whiteSpace: 'pre-line' }}>
+                {tour.description}
               </div>
-
             </div>
           </div>
 
+          <div className="col-12 col-lg-4 mt-4 mt-lg-0">
+            <div className="bg-white rounded-4 shadow-lg border-0 sticky-top" style={{ top: '100px' }}>
+              <div className="bg-info text-white p-4 rounded-top-4 text-center">
+                <p className="mb-1 text-uppercase fw-bold">Giá trọn gói</p>
+                <h2 className="display-6 fw-bold mb-0">{tour.price.toLocaleString('vi-VN')} ₫</h2>
+              </div>
+              <div className="p-4">
+                <div className="mb-4">
+                  <label className="form-label fw-bold text-secondary">Số lượng hành khách</label>
+                  <div className="d-flex align-items-center justify-content-between bg-light rounded-pill p-2 border">
+                    <button className="btn btn-white rounded-circle shadow-sm" onClick={() => setGuestSize(Math.max(1, guestSize - 1))}>-</button>
+                    <span className="fs-4 fw-bold">{guestSize}</span>
+                    <button className="btn btn-white rounded-circle shadow-sm text-info" onClick={() => setGuestSize(guestSize + 1)}>+</button>
+                  </div>
+                </div>
+                <div className="d-flex justify-content-between align-items-center mb-4 border-top pt-3">
+                  <span className="fs-5 fw-bold">Tổng tiền:</span>
+                  <span className="fs-4 fw-bold text-danger">{(tour.price * guestSize).toLocaleString('vi-VN')} ₫</span>
+                </div>
+                <button onClick={handleBooking} className="btn btn-danger w-100 rounded-pill py-3 fw-bold shadow">
+                   ĐẶT TOUR NGAY
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
