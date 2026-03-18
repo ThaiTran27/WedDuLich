@@ -42,13 +42,13 @@ function AdminDashboard() {
       setEditingId(null);
       fetchTours(); // Load lại danh sách
     } catch (err) {
-      alert("Có lỗi xảy ra, Thái kiểm tra lại Backend nhé!");
+      alert("Có lỗi xảy ra,kiểm tra lại Backend nhé!");
     }
   };
 
   // 4. Xử lý Xóa Tour
   const handleDelete = async (id) => {
-    if (window.confirm("Thái có chắc chắn muốn xóa tour này không? Hành động này không thể hoàn tác!")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa tour này không? Hành động này không thể hoàn tác!")) {
       try {
         await axios.delete(`${API_URL}/${id}`);
         fetchTours();

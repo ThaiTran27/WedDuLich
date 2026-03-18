@@ -19,6 +19,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes); 
 app.use('/api/tours', tourRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/blogs', require('./routes/blogRoutes'));
 
 app.get('/', (req, res) => {
   res.send('API Du lịch đang hoạt động!');

@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children }) => {
 
   // Nếu chưa đăng nhập hoặc không phải admin -> Đá về trang Login
   if (!user || user.role !== 'admin') {
-    alert("Thái ơi, khu vực này chỉ dành cho Admin nhé!");
+    alert("khu vực này chỉ dành cho Admin nhé!");
     return <Navigate to="/login" replace />;
   }
 

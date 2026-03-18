@@ -1,17 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // Thêm useNavigate
 import axios from 'axios';
 
 function TourList() {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const location = useLocation();
+  const navigate = useNavigate(); // Dùng để xóa bộ lọc
 
   useEffect(() => {
     const fetchTours = async () => {
       try {
         const res = await axios.get('http://127.0.0.1:5000/api/tours');
         if (res.data.success) {
-          setTours(res.data.data);
+          let fetchedTours = res.data.data;
+
+          // LOGIC LỌC DỮ LIỆU THÔNG MINH HƠN (Không phân biệt hoa thường)
+          if (location.state) {
+            if (location.state.city) {
+              fetchedTours = fetchedTours.filter(tour => 
+                tour.city?.toLowerCase().includes(location.state.city.toLowerCase())
+              );
+            }
+            if (location.state.duration) {
+              fetchedTours = fetchedTours.filter(tour => 
+                tour.duration?.toLowerCase().includes(location.state.duration.toLowerCase())
+              );
+            }
+            if (location.state.search) {
+              fetchedTours = fetchedTours.filter(tour => 
+                tour.title?.toLowerCase().includes(location.state.search.toLowerCase()) || 
+                tour.city?.toLowerCase().includes(location.state.search.toLowerCase())
+              );
+            }
+          }
+
+          setTours(fetchedTours);
         }
       } catch (error) {
         console.error("Lỗi lấy danh sách tour:", error);
@@ -20,7 +45,12 @@ function TourList() {
       }
     };
     fetchTours();
-  }, []);
+  }, [location.state]);
+
+  // Hàm xóa bộ lọc
+  const clearFilter = () => {
+    navigate('/tour-trong-nuoc', { replace: true, state: null });
+  };
 
   return (
     <div className="bg-light min-vh-100 pt-5 pb-5">
@@ -34,9 +64,24 @@ function TourList() {
       </div>
 
       <div className="container">
+        
+        {/* THANH THÔNG BÁO BỘ LỌC TÌM KIẾM */}
+        {location.state && (location.state.city || location.state.duration || location.state.search) && (
+          <div className="alert alert-info text-center mx-auto mb-5 border-0 shadow-sm rounded-pill d-flex justify-content-center align-items-center" style={{ maxWidth: '700px' }}>
+            <i className="bi bi-funnel-fill me-2"></i>
+            Đang lọc kết quả theo: 
+            <strong className="mx-2 text-danger">
+              "{location.state.city || location.state.duration || location.state.search}"
+            </strong>
+            <button onClick={clearFilter} className="btn btn-sm btn-outline-danger rounded-pill fw-bold ms-3 shadow-none">
+              Xóa lọc <i className="bi bi-x-lg"></i>
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-5"><div className="spinner-border text-info"></div></div>
-        ) : (
+        ) : tours.length > 0 ? (
           <div className="row g-4">
             {tours.map(tour => (
               <div className="col-12 col-md-6 col-lg-4" key={tour._id}>
@@ -49,7 +94,7 @@ function TourList() {
                       alt={tour.title}
                       onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=800&q=80'; }}
                     />
-                    <span className="position-absolute top-0 end-0 bg-info text-white px-3 py-1 m-3 rounded-pill fw-bold small">
+                    <span className="position-absolute top-0 end-0 bg-info text-white px-3 py-1 m-3 rounded-pill fw-bold small shadow-sm">
                       {tour.duration || '3 Ngày 2 Đêm'}
                     </span>
                   </div>
@@ -66,6 +111,17 @@ function TourList() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          /* HIỂN THỊ KHI KHÔNG CÓ TOUR NÀO KHỚP */
+          <div className="text-center py-5">
+            <i className="bi bi-search text-muted" style={{ fontSize: '4rem', opacity: '0.3' }}></i>
+            <h4 className="fw-bold mt-3 text-secondary">Rất tiếc, chưa tìm thấy tour!</h4>
+            <p className="text-muted mb-4">Hiện tại hệ thống chưa có tour nào phù hợp với danh mục bạn chọn. Vui lòng thử mục khác nhé.</p>
+            {/* Nút Xóa Lọc hoạt động 100% */}
+            <button onClick={clearFilter} className="btn btn-info text-white rounded-pill px-5 py-2 fw-bold shadow-sm">
+              <i className="bi bi-arrow-repeat me-2"></i> Xem toàn bộ Tour
+            </button>
           </div>
         )}
       </div>

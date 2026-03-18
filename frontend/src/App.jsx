@@ -17,6 +17,10 @@ const TourList = lazy(() => import('./pages/TourList'));
 const About = lazy(() => import('./pages/About'));
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Policy = lazy(() => import('./pages/Policy'));
+const OrderTracking = lazy(() => import('./pages/OrderTracking'));
 
 function App() {
   return (
@@ -46,7 +50,13 @@ function App() {
               <Route path="/gioi-thieu" element={<About />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:id" element={<BlogDetail />} />
+              <Route path="/lien-he" element={<Contact />} />
+              <Route path="/bang-gia" element={<Pricing />} />
+              <Route path="/chinh-sach" element={<Policy />} />
               
+              {/* ĐÃ THÊM ROUTE TRA CỨU VÀO ĐÂY */}
+              <Route path="/tra-cuu" element={<OrderTracking />} />
+
               {/* --- CÁC TRANG CẦN ĐĂNG NHẬP THƯỜNG --- */}
               <Route path="/tai-khoan" element={<Account />} />
               <Route path="/payment/:bookingId" element={<PaymentSandbox />} />

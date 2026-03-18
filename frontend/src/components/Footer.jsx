@@ -43,7 +43,7 @@ function Footer() {
               <button className="btn btn-outline-info rounded-circle"><i className="bi bi-youtube"></i></button>
               <button className="btn btn-outline-info rounded-circle"><i className="bi bi-instagram"></i></button>
             </div>
-            <p className="small text-secondary">Đăng ký để nhận tin khuyến mãi mới nhất từ Thái!</p>
+            <p className="small text-secondary">Đăng ký để nhận tin khuyến mãi mới nhất!</p>
           </div>
         </div>
         

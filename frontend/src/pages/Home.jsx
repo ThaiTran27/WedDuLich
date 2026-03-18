@@ -1,14 +1,36 @@
-import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function Home() {
   const [tours, setTours] = useState([]);
+  
+  // 1. KHAI BÁO STATE VÀ HÀM XỬ LÝ TÌM KIẾM
+  const navigate = useNavigate();
+  const [searchKeyword, setSearchKeyword] = useState('');
+
+  const handleSearch = () => {
+    if (searchKeyword.trim() !== '') {
+      // Chuyển hướng sang trang tour và mang theo từ khóa
+      navigate('/tour-trong-nuoc', { state: { search: searchKeyword } });
+    }
+  };
 
   useEffect(() => {
     const fetchTours = async () => {
-      const res = await axios.get('http://127.0.0.1:5000/api/tours');
-      if (res.data.success) setTours(res.data.data.slice(0, 6)); // Lấy 6 tour tiêu biểu
+      try {
+        const res = await axios.get('http://127.0.0.1:5000/api/tours');
+        // Hỗ trợ đa dạng cấu trúc dữ liệu trả về từ Backend
+        let fetchedTours = [];
+        if (res.data && Array.isArray(res.data.data)) {
+          fetchedTours = res.data.data;
+        } else if (Array.isArray(res.data)) {
+          fetchedTours = res.data;
+        }
+        setTours(fetchedTours.slice(0, 6)); // Lấy 6 tour tiêu biểu
+      } catch (error) {
+        console.error("Lỗi lấy danh sách tour nổi bật:", error);
+      }
     };
     fetchTours();
   }, []);
@@ -19,13 +41,25 @@ function Home() {
       <section className="hero-section position-relative text-white d-flex align-items-center" 
                style={{ height: '70vh', background: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1500&q=80")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="container text-center">
-          <h1 className="display-3 fw-bold mb-3 font_DPTBlacksword">Khám phá Việt Nam cùng Thái</h1>
+          <h1 className="display-3 fw-bold mb-3 font_DPTBlacksword">Khám phá Việt Nam</h1>
           <p className="fs-4 mb-4">Trải nghiệm những hành trình độc đáo và chuyên nghiệp nhất</p>
           
-          {/* THANH TÌM KIẾM NHANH */}
+          {/* 2. THANH TÌM KIẾM NHANH (Đã gắn sự kiện) */}
           <div className="bg-white p-2 rounded-pill shadow-lg d-inline-flex align-items-center w-75">
-            <input type="text" className="form-control border-0 rounded-pill px-4" placeholder="Bạn muốn đi đâu?" />
-            <button className="btn btn-info text-white rounded-pill px-5 fw-bold ms-2 py-2">TÌM KIẾM</button>
+            <input 
+              type="text" 
+              className="form-control border-0 rounded-pill px-4 shadow-none" 
+              placeholder="Bạn muốn đi đâu? (VD: Bến Tre, Phú Quốc...)" 
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <button 
+              onClick={handleSearch}
+              className="btn btn-info text-white rounded-pill px-5 fw-bold ms-2 py-2"
+            >
+              TÌM KIẾM
+            </button>
           </div>
         </div>
       </section>
@@ -52,7 +86,7 @@ function Home() {
                   <div className="card-body p-4">
                     <h5 className="card-title fw-bold text-dark mb-3" style={{ height: '50px', overflow: 'hidden' }}>{tour.title}</h5>
                     <div className="d-flex justify-content-between align-items-center border-top pt-3">
-                      <span className="text-danger fw-bold fs-5">{tour.price.toLocaleString('vi-VN')} ₫</span>
+                      <span className="text-danger fw-bold fs-5">{tour.price ? tour.price.toLocaleString('vi-VN') : 'Liên hệ'} ₫</span>
                       <Link to={`/tours/${tour._id}`} className="btn btn-outline-info rounded-pill px-3 btn-sm fw-bold">Chi tiết</Link>
                     </div>
                   </div>

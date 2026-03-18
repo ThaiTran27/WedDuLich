@@ -64,5 +64,24 @@ const getUserBookings = async (req, res) => {
   }
 };
 
-// Nhớ export thêm getUserBookings nhé:
-module.exports = { createBooking, getAllBookings, updatePaymentStatus, getUserBookings };
+// [GET] /api/bookings/track - Tra cứu đơn hàng công khai (Không cần đăng nhập)
+const trackOrder = async (req, res) => {
+  try {
+    const { code } = req.query;
+    
+    // Tìm kiếm đơn hàng theo Mã đơn (chính là _id của MongoDB)
+    const booking = await Booking.findById(code).populate('tourId', 'title image duration price');
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã.' });
+    }
+
+    // Trả về dưới dạng mảng để Frontend dễ xử lý hiển thị
+    res.status(200).json({ success: true, data: [booking] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Mã đơn hàng không hợp lệ.' });
+  }
+};
+
+// Export tất cả ra ngoài
+module.exports = { createBooking, getAllBookings, updatePaymentStatus, getUserBookings, trackOrder };
