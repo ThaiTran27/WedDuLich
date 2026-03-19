@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
 
 function AdminDashboard() {
   const [tours, setTours] = useState([]);
@@ -125,7 +126,7 @@ function AdminDashboard() {
           <tbody>
             {tours.map(tour => (
               <tr key={tour._id}>
-                <td><img src={tour.image} alt="" style={{ width: '80px', height: '50px', objectFit: 'cover' }} className="rounded" /></td>
+                <td><img src={resolveImageUrl(tour.image)} alt="" style={{ width: '80px', height: '50px', objectFit: 'cover' }} className="rounded" /></td>
                 <td className="fw-bold">{tour.title}</td>
                 <td className="text-danger fw-bold">{tour.price.toLocaleString()} ₫</td>
                 <td className="text-center">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom'; // Thêm useNavigate
 import axios from 'axios';
+import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
 
 function TourList() {
   const [tours, setTours] = useState([]);
@@ -88,7 +89,7 @@ function TourList() {
                 <div className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden transition-all hover-scale">
                   <div className="position-relative">
                     <img 
-                      src={`/assets/img/index/${tour.image}`} 
+                      src={resolveImageUrl(tour.image)}
                       className="card-img-top" 
                       style={{ height: '250px', objectFit: 'cover' }} 
                       alt={tour.title}

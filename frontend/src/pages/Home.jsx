@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
 
 function Home() {
   const [tours, setTours] = useState([]);
@@ -80,7 +81,13 @@ function Home() {
               <div className="col-12 col-md-4" key={tour._id}>
                 <div className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-scale transition-all">
                   <div className="position-relative">
-                    <img src={tour.image} className="card-img-top" style={{ height: '220px', objectFit: 'cover' }} alt={tour.title} />
+                    <img
+                    src={resolveImageUrl(tour.image)}
+                    className="card-img-top"
+                    style={{ height: '220px', objectFit: 'cover' }}
+                    alt={tour.title}
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=800&q=80'; }}
+                  />
                     <span className="position-absolute top-0 start-0 bg-danger text-white px-3 py-1 m-3 rounded-pill fw-bold small">Hot Tour</span>
                   </div>
                   <div className="card-body p-4">

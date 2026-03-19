@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
 
 function TourDetails() {
   const { id } = useParams();
@@ -139,7 +140,7 @@ function TourDetails() {
             
             {/* Ảnh Cover */}
             <img 
-              src={tour.image || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1200&q=80"} 
+              src={resolveImageUrl(tour.image) || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1200&q=80"} 
               alt={tour.title} 
               className="tour-image-banner mb-4"
               onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1200&q=80'; }}

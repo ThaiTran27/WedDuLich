@@ -21,7 +21,7 @@ const seedData = async () => {
       {
         title: 'Tour Miền Tây: Mỹ Tho - Bến Tre - Cần Thơ',
         city: 'Tiền Giang - Bến Tre - Cần Thơ',
-        image: '/images/tour-1.jpg', // ĐƯỜNG DẪN MỚI hợp lệ (sau khi di chuyển ảnh qua public)
+        image: 'frontend/public/assets/images/tour-1.jpg', // ĐƯỜNG DẪN MỚI hợp lệ (sau khi di chuyển ảnh qua public)
         price: 2100000,
         duration: '3 ngày 2 đêm',
       },
