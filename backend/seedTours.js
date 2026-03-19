@@ -1,79 +1,59 @@
-// backend/seedTours.js
 const mongoose = require('mongoose');
-const Tour = require('./models/Tour'); // Nhớ trỏ đúng đường dẫn đến file Model Tour của bạn
+const Tour = require('./models/Tour');
 
-// 1. Kết nối đến MongoDB (Vui lòng kiểm tra lại URI nếu có thay đổi)
-const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tour_db';
+// Đảm bảo tên database trùng với tên trong file server.js của bạn (thường là tour_db)
+const mongoURI = 'mongodb://127.0.0.1:27017/tour_db'; 
+
 const seedData = async () => {
   try {
-    await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(mongoURI);
     console.log('MongoDB đã kết nối để seed dữ liệu...');
 
-    // 2. Xóa dữ liệu tour cũ (tùy chọn, để đảm bảo sạch sẽ)
+    // Xóa sạch tour cũ
     await Tour.deleteMany({});
     console.log('Đã xóa dữ liệu tour cũ.');
 
-    // 3. ĐỊNH NGHĨA DỮ LIỆU TOUR MỚI VỚI HÌNH ẢNH MỚI VÀ ĐƯỜNG DẪN ĐÚNG
+    // Bơm tour mới có đầy đủ Lịch trình & Khuyến mãi
     const toursData = [
       {
-        title: 'Tour Miền Tây: Mỹ Tho - Bến Tre - Cần Thơ',
-        city: 'Tiền Giang - Bến Tre - Cần Thơ',
-        image: 'frontend/public/assets/images/tour-1.jpg', // ĐƯỜNG DẪN MỚI hợp lệ (sau khi di chuyển ảnh qua public)
-        price: 2100000,
-        duration: '3 ngày 2 đêm',
-      },
-      {
-        title: 'Tour Đảo Phú Quốc: Biển Xanh - Cát Trắng',
-        city: 'Kiên Giang',
-        image: '/images/tour-2.jpg', // ĐƯỜNG DẪN MỚI
-        price: 3500000,
-        duration: '4 ngày 3 đêm',
-      },
-      {
-        title: 'Tour Nha Trang: Vịnh Cam Ranh - Đảo Bình Ba',
-        city: 'Khánh Hòa',
-        image: '/images/tour-3.jpg', // ĐƯỜNG DẪN MỚI
-        price: 2800000,
-        duration: '3 ngày 2 đêm',
-      },
-      {
-        title: 'Tour Đà Lạt: Thành Phố Ngàn Hoa',
-        city: 'Lâm Đồng',
-        image: '/images/tour-4.jpg', // ĐƯỜNG DẪN MỚI
-        price: 2500000,
-        duration: '3 ngày 2 đêm',
-      },
-      {
-        title: 'Tour Đà Nẵng - Hội An - Bà Nà Hills',
-        city: 'Đà Nẵng - Quảng Nam',
-        image: '/images/tour-5.jpg', // ĐƯỜNG DẪN MỚI
-        price: 3200000,
-        duration: '4 ngày 3 đêm',
-      },
-      {
-        title: 'Tour Hồ Chí Minh - Cần Giờ 1 Ngày',
-        city: 'TP.HCM',
-        image: '/images/tour-6.jpg', // ĐƯỜNG DẪN MỚI
-        price: 900000,
-        duration: '1 Ngày',
-      },
+        title: 'Tour Miền Tây 2N1Đ: Cần Thơ - Chợ Nổi Cái Răng - Bến Tre',
+        city: 'Cần Thơ - Bến Tre',
+        image: '/images/tour-1.jpg',
+        description: 'Hành trình khám phá vẻ đẹp miệt vườn sông nước miền Tây, trải nghiệm chợ nổi Cái Răng sầm uất và thưởng thức đặc sản xứ dừa Bến Tre.',
+        price: 1650000,
+        duration: '2 Ngày 1 Đêm',
+        availableSeats: 25,
+        featured: true,
+        startDate: 'Sáng Thứ 7 hằng tuần',
+        endDate: 'Chiều Chủ Nhật',
+        promotions: [
+          'Giảm ngay 100.000đ khi đặt nhóm từ 4 người.',
+          'Tặng nón du lịch cao cấp và nước suối miễn phí.',
+          'Miễn phí vé tham quan miệt vườn trái cây.'
+        ],
+        itinerary: [
+          {
+            day: 'Ngày 1',
+            title: 'Hồ Chí Minh - Bến Tre - Cần Thơ',
+            description: 'Sáng khởi hành đi Bến Tre. Lên tàu tham quan Tứ linh: Long, Lân, Quy, Phụng. Ghé thăm lò kẹo dừa, đi xe ngựa đường làng, chèo xuồng ba lá trong rạch dừa nước. Chiều di chuyển xuống Cần Thơ nhận phòng khách sạn, tối tự do khám phá Bến Ninh Kiều.'
+          },
+          {
+            day: 'Ngày 2',
+            title: 'Chợ Nổi Cái Răng - Làng Du Lịch Mỹ Khánh - Trở về',
+            description: '5h30 sáng lên thuyền đi Chợ nổi Cái Răng - tìm hiểu văn hóa mua bán trên sông của người miền Tây. Thưởng thức bún riêu, hủ tiếu ngay trên ghe. Sau đó di chuyển qua Làng du lịch Mỹ Khánh xem đua heo, đua chó. Chiều lên xe khởi hành về lại TP.HCM. Kết thúc hành trình.'
+          }
+        ]
+      }
     ];
 
-    // 4. Lưu tour mới vào database
     await Tour.insertMany(toursData);
-    console.log('Dữ liệu tour mới đã được seed thành công.');
+    console.log('🎉 DỮ LIỆU TOUR MỚI ĐÃ ĐƯỢC SEED THÀNH CÔNG!');
+    process.exit();
 
   } catch (error) {
     console.error('Lỗi khi seed dữ liệu tour:', error);
-  } finally {
-    // 5. Đóng kết nối
-    mongoose.connection.close();
-    console.log('Đã đóng kết nối MongoDB.');
+    process.exit(1);
   }
 };
 
-// Bắt đầu quá trình seed
 seedData();

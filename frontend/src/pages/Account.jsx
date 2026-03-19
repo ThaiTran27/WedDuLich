@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { resolveImageUrl } from '../utils/imagePath'; // ĐÃ THÊM: Import hàm fix ảnh
 
 function Account() {
   const navigate = useNavigate();
@@ -94,35 +95,49 @@ function Account() {
               ) : (
                 <div className="d-flex flex-column gap-3">
                   {myBookings.map((booking) => (
-                    <div key={booking._id} className="card border border-light bg-light rounded-4 overflow-hidden">
+                    <div key={booking._id} className="card border border-light bg-light rounded-4 overflow-hidden shadow-sm">
                       <div className="row g-0 align-items-center">
                         <div className="col-md-3">
+                          {/* ĐÃ FIX: Ảnh hiển thị đúng đường dẫn */}
                           <img 
-                            src={booking.tourId?.image || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=500&q=80"} 
+                            src={resolveImageUrl(booking.tourId?.image) || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=500&q=80"} 
                             className="img-fluid w-100 h-100" 
-                            style={{ objectFit: 'cover', minHeight: '120px' }} 
+                            style={{ objectFit: 'cover', minHeight: '130px' }} 
                             alt="Tour"
+                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=500&q=80'; }}
                           />
                         </div>
                         <div className="col-md-9">
                           <div className="card-body">
                             <div className="d-flex justify-content-between align-items-start mb-2">
-                              <h5 className="card-title fw-bold text-info mb-0">
+                              <h5 className="card-title fw-bold text-info mb-0" style={{ maxWidth: '75%' }}>
                                 {booking.tourId?.title || 'Tour này đã ngưng phục vụ'}
                               </h5>
-                              <span className={`badge rounded-pill px-3 py-2 ${booking.status === 'paid' ? 'bg-success' : 'bg-warning text-dark'}`}>
-                                {booking.status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
-                              </span>
+                              
+                              {/* ĐÃ FIX: Logic 3 trạng thái màu sắc cực chuẩn */}
+                              {booking.status === 'paid' && (
+                                <span className="badge rounded-pill px-3 py-2 bg-success shadow-sm">Đã thanh toán</span>
+                              )}
+                              {booking.status === 'pending_confirmation' && (
+                                <span className="badge rounded-pill px-3 py-2 bg-primary shadow-sm">Chờ xác nhận</span>
+                              )}
+                              {(booking.status !== 'paid' && booking.status !== 'pending_confirmation') && (
+                                <span className="badge rounded-pill px-3 py-2 bg-warning text-dark shadow-sm">Chờ thanh toán</span>
+                              )}
                             </div>
+                            
                             <div className="text-secondary small mb-2 d-flex gap-3">
                               <span><i className="bi bi-people-fill me-1"></i> {booking.guestSize} khách</span>
                               <span><i className="bi bi-clock-fill me-1"></i> {booking.tourId?.duration || 'Đang cập nhật'}</span>
                             </div>
-                            <div className="d-flex justify-content-between align-items-center mt-3">
+                            
+                            <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light">
                               <span className="text-danger fw-bold fs-5">{booking.totalPrice?.toLocaleString('vi-VN')} ₫</span>
-                              {booking.status !== 'paid' && (
-                                <Link to={`/payment/${booking._id}`} className="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm">
-                                  Thanh toán ngay
+                              
+                              {/* Chỉ hiện nút Thanh Toán Ngay nếu status là "Chờ thanh toán" */}
+                              {(booking.status !== 'paid' && booking.status !== 'pending_confirmation') && (
+                                <Link to={`/payment/${booking._id}`} className="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm hover-scale">
+                                  Thanh toán ngay <i className="bi bi-arrow-right-short"></i>
                                 </Link>
                               )}
                             </div>

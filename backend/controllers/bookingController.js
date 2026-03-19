@@ -29,13 +29,22 @@ const getAllBookings = async (req, res) => {
   }
 };
 
-// [PUT] /api/bookings/:id/pay - Cập nhật trạng thái thanh toán thành công
+// [PUT] /api/bookings/:id/pay - Cập nhật trạng thái thanh toán
 const updatePaymentStatus = async (req, res) => {
   try {
-    // Tìm đơn hàng theo ID và cập nhật status thành 'paid'
+    // Lấy phương thức thanh toán từ Frontend gửi lên (nếu có)
+    const { paymentMethod } = req.body; 
+
+    // Mặc định là đã thanh toán, nhưng nếu khách chọn tiền mặt thì đổi thành chờ xác nhận
+    let newStatus = 'paid'; 
+    if (paymentMethod === 'cash') {
+      newStatus = 'pending_confirmation';
+    }
+
+    // Tìm đơn hàng theo ID và cập nhật status mới
     const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id, 
-      { status: 'paid' }, 
+      { status: newStatus }, 
       { new: true } // Trả về dữ liệu mới sau khi cập nhật
     );
 
@@ -43,9 +52,9 @@ const updatePaymentStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn đặt tour' });
     }
 
-    res.status(200).json({ success: true, message: 'Thanh toán thành công', data: updatedBooking });
+    res.status(200).json({ success: true, message: 'Cập nhật trạng thái thành công', data: updatedBooking });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi cập nhật thanh toán', error: error.message });
+    res.status(500).json({ success: false, message: 'Lỗi cập nhật trạng thái', error: error.message });
   }
 };
 

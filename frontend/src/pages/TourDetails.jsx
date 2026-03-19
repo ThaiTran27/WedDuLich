@@ -51,7 +51,7 @@ function TourDetails() {
       });
 
       if (res.data.success) {
-        // CHIÊU MỚI: Chuyền thẳng dữ liệu đơn hàng và thông tin Tour sang trang thanh toán!
+        // Chuyền thẳng dữ liệu đơn hàng và thông tin Tour sang trang thanh toán!
         navigate(`/payment/${res.data.data._id}`, { 
           state: { 
             booking: res.data.data,
@@ -85,7 +85,6 @@ function TourDetails() {
   }
 
   return (
-    // Thêm padding-top 100px để fix lỗi bị thanh Navbar che khuất
     <div className="bg-light pb-5" style={{ paddingTop: '100px', minHeight: '100vh' }}>
       
       {/* CSS Tùy chỉnh cho trang chi tiết */}
@@ -93,7 +92,7 @@ function TourDetails() {
         {`
           .sticky-booking {
             position: sticky;
-            top: 100px; /* Bám dính cách top 100px */
+            top: 100px;
             z-index: 10;
           }
           .tour-image-banner {
@@ -117,6 +116,15 @@ function TourDetails() {
             transition: all 0.2s;
           }
           .guest-btn:hover { background: #0dcaf0; color: white; border-color: #0dcaf0; }
+
+          /* Box Khuyến Mãi */
+          .promo-box { border: 2px dashed #ff6b6b; background-color: #fff5f5; border-radius: 16px; padding: 20px; position: relative; }
+          .promo-title { position: absolute; top: -15px; left: 20px; background: #ff6b6b; color: white; padding: 4px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(255,107,107,0.2); }
+          
+          /* Lịch trình Timeline */
+          .timeline { border-left: 2px dashed #0dcaf0; padding-left: 30px; margin-left: 15px; position: relative; margin-top: 30px; }
+          .timeline-item { position: relative; margin-bottom: 30px; }
+          .timeline-badge { position: absolute; left: -43px; top: 0; width: 26px; height: 26px; border-radius: 50%; background: #0dcaf0; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 4px solid #f8f9fa; box-shadow: 0 0 0 2px #0dcaf0;}
         `}
       </style>
 
@@ -138,7 +146,7 @@ function TourDetails() {
           {/* CỘT TRÁI: HÌNH ẢNH & CHI TIẾT */}
           <div className="col-12 col-lg-8">
             
-            {/* Ảnh Cover */}
+            {/* Ảnh Cover (Giữ nguyên hàm resolveImageUrl của bạn) */}
             <img 
               src={resolveImageUrl(tour.image) || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1200&q=80"} 
               alt={tour.title} 
@@ -146,48 +154,86 @@ function TourDetails() {
               onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1200&q=80'; }}
             />
 
-            {/* Thông tin nhanh (Pills) */}
-            <div className="d-flex flex-wrap gap-3 mb-5">
-              <div className="bg-white px-4 py-3 rounded-4 shadow-sm border d-flex align-items-center flex-fill">
-                <i className="bi bi-clock-history fs-3 text-info me-3"></i>
-                <div>
-                  <small className="text-muted d-block">Thời gian</small>
-                  <strong className="text-dark">{tour.duration || 'Đang cập nhật'}</strong>
+            {/* Thông tin nhanh (Pills) CẬP NHẬT 4 Ô */}
+            <div className="row g-3 mb-4">
+              <div className="col-6 col-md-3">
+                <div className="bg-white p-3 rounded-4 shadow-sm border h-100 text-center">
+                  <i className="bi bi-calendar-event fs-2 text-info mb-2"></i>
+                  <small className="text-muted d-block">Khởi hành</small>
+                  <strong className="text-dark small">{tour.startDate || 'Hàng ngày'}</strong>
                 </div>
               </div>
-              <div className="bg-white px-4 py-3 rounded-4 shadow-sm border d-flex align-items-center flex-fill">
-                <i className="bi bi-geo-alt fs-3 text-danger me-3"></i>
-                <div>
+              <div className="col-6 col-md-3">
+                <div className="bg-white p-3 rounded-4 shadow-sm border h-100 text-center">
+                  <i className="bi bi-clock-history fs-2 text-primary mb-2"></i>
+                  <small className="text-muted d-block">Thời lượng</small>
+                  <strong className="text-dark small">{tour.duration || 'Đang cập nhật'}</strong>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="bg-white p-3 rounded-4 shadow-sm border h-100 text-center">
+                  <i className="bi bi-geo-alt fs-2 text-danger mb-2"></i>
                   <small className="text-muted d-block">Địa điểm</small>
-                  <strong className="text-dark">{tour.city || 'Việt Nam'}</strong>
+                  <strong className="text-dark small">{tour.city || 'Việt Nam'}</strong>
                 </div>
               </div>
-              <div className="bg-white px-4 py-3 rounded-4 shadow-sm border d-flex align-items-center flex-fill">
-                <i className="bi bi-bus-front fs-3 text-warning me-3"></i>
-                <div>
+              <div className="col-6 col-md-3">
+                <div className="bg-white p-3 rounded-4 shadow-sm border h-100 text-center">
+                  <i className="bi bi-bus-front fs-2 text-warning mb-2"></i>
                   <small className="text-muted d-block">Phương tiện</small>
-                  <strong className="text-dark">Ô tô, Thuyền</strong>
+                  <strong className="text-dark small">Ô tô, Thuyền</strong>
                 </div>
               </div>
             </div>
 
-            {/* Tổng quan chuyến đi */}
+            {/* CHƯƠNG TRÌNH KHUYẾN MÃI */}
+            {(tour.promotions && tour.promotions.length > 0) && (
+              <div className="promo-box mb-5 mt-4">
+                <div className="promo-title"><i className="bi bi-gift-fill me-2"></i>ƯU ĐÃI ĐẶC BIỆT</div>
+                <ul className="mb-0 mt-2 list-unstyled text-dark">
+                  {tour.promotions.map((promo, idx) => (
+                    <li key={idx} className="mb-2"><i className="bi bi-check-circle-fill text-success me-2"></i>{promo}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* TỔNG QUAN CHUYẾN ĐI */}
             <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
               <h4 className="fw-bold border-bottom pb-3 mb-4 text-dark">
                 <i className="bi bi-info-circle-fill text-info me-2"></i> Tổng quan chuyến đi
               </h4>
               <div className="text-secondary lh-lg" style={{ fontSize: '1.05rem' }}>
                 <p>Khám phá vùng đất <strong>{tour.city}</strong> với những trải nghiệm khó quên cùng Du Lịch Việt. Chuyến hành trình được thiết kế chuyên nghiệp, tối ưu hóa thời gian để bạn có thể tận hưởng trọn vẹn vẻ đẹp thiên nhiên, văn hóa và ẩm thực địa phương.</p>
-                <ul className="list-unstyled mt-4">
-                  <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Trải nghiệm văn hóa đặc sắc tại các địa danh nổi tiếng.</li>
-                  <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Thưởng thức đặc sản vùng miền với thực đơn đa dạng.</li>
-                  <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Lưu trú tại khách sạn tiêu chuẩn, tiện nghi thoải mái.</li>
-                  <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Hướng dẫn viên nhiệt tình, giàu kinh nghiệm đồng hành suốt tuyến.</li>
-                </ul>
+                {(!tour.itinerary || tour.itinerary.length === 0) && (
+                  <ul className="list-unstyled mt-4">
+                    <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Trải nghiệm văn hóa đặc sắc tại các địa danh nổi tiếng.</li>
+                    <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Thưởng thức đặc sản vùng miền với thực đơn đa dạng.</li>
+                    <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Lưu trú tại khách sạn tiêu chuẩn, tiện nghi thoải mái.</li>
+                    <li className="mb-3"><i className="bi bi-check2-circle text-success me-2 fs-5"></i> Hướng dẫn viên nhiệt tình, giàu kinh nghiệm đồng hành suốt tuyến.</li>
+                  </ul>
+                )}
               </div>
             </div>
             
-            {/* Nếu có thêm phần Lịch trình (Itinerary) thì code ở đây */}
+            {/* LỊCH TRÌNH CỤ THỂ (TIMELINE) */}
+            {(tour.itinerary && tour.itinerary.length > 0) && (
+              <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
+                <h4 className="fw-bold border-bottom pb-3 text-dark">
+                  <i className="bi bi-map-fill text-danger me-2"></i> Lịch trình cụ thể
+                </h4>
+                <div className="timeline">
+                  {tour.itinerary.map((item, index) => (
+                    <div className="timeline-item" key={index}>
+                      <div className="timeline-badge">{index + 1}</div>
+                      <h5 className="fw-bold text-dark mb-1">{item.day}: <span className="text-primary">{item.title}</span></h5>
+                      <p className="text-secondary lh-lg mt-2">{item.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* CỘT PHẢI: BẢNG ĐẶT TOUR (STICKY) */}
