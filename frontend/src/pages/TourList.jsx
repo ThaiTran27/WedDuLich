@@ -88,7 +88,7 @@ function TourList() {
                 <div className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden transition-all hover-scale">
                   <div className="position-relative">
                     <img 
-                      src={tour.image} 
+                      src={`/assets/img/index/${tour.image}`} 
                       className="card-img-top" 
                       style={{ height: '250px', objectFit: 'cover' }} 
                       alt={tour.title}
