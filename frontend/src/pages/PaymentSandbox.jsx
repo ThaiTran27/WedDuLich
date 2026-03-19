@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'; // Thêm useLocation
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { resolveImageUrl } from '../utils/imagePath';
 
 function PaymentSandbox() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // Bắt gói dữ liệu từ trang trước
+  const location = useLocation();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  
+  const [showQrInfo, setShowQrInfo] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '', phone: '', email: '', notes: '', paymentRate: '100', paymentMethod: 'bank',
@@ -16,7 +19,6 @@ function PaymentSandbox() {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
-    // 1. Tự động điền thông tin User
     const userString = localStorage.getItem('user');
     if (userString) {
       const user = JSON.parse(userString);
@@ -26,19 +28,16 @@ function PaymentSandbox() {
       }));
     }
 
-    // 2. Load thông tin đơn hàng
     const fetchBooking = async () => {
-      // CHIÊU MỚI: Nếu có dữ liệu ném sang từ trang Chi tiết Tour, lấy xài luôn không cần gọi API!
       if (location.state && location.state.booking && location.state.tourData) {
         setBooking({
           ...location.state.booking,
-          tourId: location.state.tourData // Ghép thông tin Tour vào cho khớp cấu trúc
+          tourId: location.state.tourData
         });
         setLoading(false);
         return;
       }
 
-      // TRƯỜNG HỢP DỰ PHÒNG: Nếu khách vô tình F5 trang web (mất dữ liệu ném sang), thì mới gọi API
       try {
         const res = await axios.get(`http://127.0.0.1:5000/api/bookings/track?code=${bookingId}`);
         if (res.data.success && res.data.data.length > 0) {
@@ -73,16 +72,40 @@ function PaymentSandbox() {
       return;
     }
 
+    if (formData.paymentMethod === 'bank') {
+      setShowQrInfo(true);
+      window.scrollTo(0, 0); 
+      return;
+    }
+
+    // Nếu thanh toán tiền mặt -> Gọi API thực thi luôn
+    executePaymentAPI();
+  };
+
+  // ĐÃ SỬA: Logic gọi API và thông báo điều hướng trang chủ
+  const executePaymentAPI = async () => {
     setProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const res = await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}/pay`);
+      
+      // Gửi thêm phương thức thanh toán để Backend có thể cập nhật trạng thái "Chờ xác nhận"
+      const res = await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}/pay`, {
+        paymentMethod: formData.paymentMethod
+      });
+      
       if (res.data.success) {
-        alert('🎉 Thanh toán thành công! Cảm ơn bạn đã đặt tour.');
-        navigate('/tra-cuu'); 
+        // Tùy biến thông báo theo phương thức thanh toán
+        if (formData.paymentMethod === 'cash') {
+          alert('🎉 Đặt tour thành công!\nTrạng thái: Chờ xác nhận.\nVui lòng đến văn phòng của chúng tôi để hoàn tất thanh toán nhé.');
+        } else {
+          alert('🎉 Đã ghi nhận thông tin thanh toán!\nChúng tôi sẽ kiểm tra đối soát và xác nhận đơn hàng sớm nhất.');
+        }
+        
+        // Điều hướng về trang chủ
+        navigate('/'); 
       }
     } catch (error) {
-      alert('Lỗi khi xử lý thanh toán. Vui lòng kiểm tra lại Backend.');
+      alert('Lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.');
       console.error(error);
     } finally {
       setProcessing(false);
@@ -93,7 +116,6 @@ function PaymentSandbox() {
   if (!booking) return null;
 
   const totalPrice = booking.totalPrice || 0;
-  const paymentAmount = formData.paymentRate === '100' ? totalPrice : totalPrice / 2;
 
   return (
     <div className="bg-light pb-5" style={{ paddingTop: '90px', minHeight: '100vh' }}>
@@ -135,7 +157,13 @@ function PaymentSandbox() {
               <div className="payment-card-header bg-white"><div style={{width:'8px', height:'8px', background:'#0dcaf0', borderRadius:'50%'}}></div> Thông tin tour</div>
               <div className="payment-card-body">
                 <div className="d-flex align-items-center gap-4">
-                  <img src={booking.tourId?.image || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=200&q=80"} alt="Tour" className="rounded-3" style={{width: '100px', height: '100px', objectFit: 'cover'}} />
+                  <img 
+                    src={resolveImageUrl(booking.tourId?.image) || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=200&q=80"} 
+                    alt="Tour" 
+                    className="rounded-3" 
+                    style={{width: '100px', height: '100px', objectFit: 'cover'}} 
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=200&q=80'; }}
+                  />
                   <div>
                     <h5 className="fw-bold text-dark mb-2">{booking.tourId?.title || 'Tour du lịch'}</h5>
                     <div className="text-muted small">
@@ -190,16 +218,6 @@ function PaymentSandbox() {
                   <div className="flex-grow-1">
                     <div className="fw-bold text-primary mb-1"><i className="bi bi-bank me-2"></i>Chuyển khoản ngân hàng</div>
                     <small className="text-muted">Giữ chỗ tức thì, xác nhận sau khi nhận được chuyển khoản.</small>
-                    {formData.paymentMethod === 'bank' && (
-                      <div className="mt-3 p-3 bg-white border border-warning rounded-3 d-flex align-items-center gap-3">
-                        <img src="https://inkythuatso.com/uploads/images/2021/09/logo-vietcombank-inkythuatso-1-10-10-04-18.jpg" alt="VCB" style={{width: '50px'}} />
-                        <div>
-                          <div className="fw-bold text-dark">CÔNG TY TNHH DU LỊCH VIỆT <span className="badge bg-success ms-2" style={{fontSize: '10px'}}>Doanh nghiệp</span></div>
-                          <div className="small text-muted">Số TK: <strong>1023456789</strong> - Ngân hàng Vietcombank</div>
-                          <div className="small text-danger fw-bold mt-1">Nội dung: DLV {booking._id.substring(0,6).toUpperCase()} {formData.phone}</div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </label>
                 <label className={`radio-box w-100 mb-0 ${formData.paymentMethod === 'cash' ? 'active' : ''}`}>
@@ -215,36 +233,90 @@ function PaymentSandbox() {
 
           <div className="col-12 col-lg-4">
             <div className="sticky-summary">
-              <div className="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-                <div className="card-body p-4">
-                  <div className="d-flex justify-content-between mb-3 text-secondary">
-                    <span>Hành khách</span><span className="fw-bold text-dark">{booking.guestSize} người</span>
-                  </div>
-                  <div className="d-flex justify-content-between mb-3 text-secondary">
-                    <span>Tạm tính</span><span className="fw-bold text-dark">{booking.totalPrice.toLocaleString('vi-VN')}đ</span>
-                  </div>
-                  <hr className="text-muted" />
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <span className="fw-bold fs-5 text-dark">Tổng cộng</span><span className="fw-bold fs-4 text-danger">{totalPrice.toLocaleString('vi-VN')}đ</span>
-                  </div>
+              
+              {!showQrInfo ? (
+                <div className="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between mb-3 text-secondary">
+                      <span>Hành khách</span><span className="fw-bold text-dark">{booking.guestSize} người</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-3 text-secondary">
+                      <span>Tạm tính</span><span className="fw-bold text-dark">{booking.totalPrice.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                    <hr className="text-muted" />
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                      <span className="fw-bold fs-5 text-dark">Tổng cộng</span><span className="fw-bold fs-4 text-danger">{totalPrice.toLocaleString('vi-VN')}đ</span>
+                    </div>
 
-                  <div className="form-check mb-4">
-                    <input className="form-check-input" type="checkbox" id="terms" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
-                    <label className="form-check-label small text-muted" htmlFor="terms">
-                      Tôi đồng ý với <Link to="/chinh-sach" className="text-info fw-bold text-decoration-none">Điều khoản</Link> và <Link to="/chinh-sach" className="text-info fw-bold text-decoration-none">Chính sách bảo mật</Link>.
-                    </label>
-                  </div>
+                    <div className="form-check mb-4">
+                      <input className="form-check-input" type="checkbox" id="terms" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
+                      <label className="form-check-label small text-muted" htmlFor="terms">
+                        Tôi đồng ý với <Link to="/chinh-sach" className="text-info fw-bold text-decoration-none">Điều khoản</Link> và <Link to="/chinh-sach" className="text-info fw-bold text-decoration-none">Chính sách bảo mật</Link>.
+                      </label>
+                    </div>
 
-                  <button 
-                    onClick={handlePayment} 
-                    disabled={!termsAccepted || processing}
-                    className={`btn w-100 rounded-pill py-3 fw-bold shadow-sm ${termsAccepted ? 'btn-danger' : 'btn-secondary opacity-50'}`}
-                  >
-                    {processing ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
-                    {processing ? 'ĐANG XỬ LÝ...' : `XÁC NHẬN THANH TOÁN`}
-                  </button>
+                    <button 
+                      onClick={handlePayment} 
+                      disabled={!termsAccepted || processing}
+                      className={`btn w-100 rounded-pill py-3 fw-bold shadow-sm ${termsAccepted ? 'btn-danger' : 'btn-secondary opacity-50'}`}
+                    >
+                      {processing ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
+                      {processing ? 'ĐANG XỬ LÝ...' : `XÁC NHẬN THANH TOÁN`}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden text-center p-4">
+                  <h5 className="fw-bold text-primary mb-3"><i className="bi bi-qr-code-scan me-2"></i>Quét mã thanh toán</h5>
+                  
+                  <div className="p-3 border rounded-4 mb-3 d-inline-block bg-white shadow-sm">
+                    <img 
+                      src={`https://img.vietqr.io/image/ACB-24315887-compact2.png?amount=${totalPrice}&addInfo=${encodeURIComponent(`DLV ${booking._id.substring(0,6).toUpperCase()}`)}&accountName=${encodeURIComponent('CONG TY TNHH DU LICH VIET')}`} 
+                      alt="VietQR Code" 
+                      className="img-fluid" 
+                      style={{width: '220px'}} 
+                      onError={(e) => { 
+                        e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg'; 
+                      }} 
+                    />
+                  </div>
+
+                  <div className="text-start small bg-light p-3 rounded-3 mb-3">
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Ngân hàng</span>
+                      <span className="fw-bold">ACB</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Chủ tài khoản</span>
+                      <span className="fw-bold">CÔNG TY TNHH DU LỊCH VIỆT</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Số tài khoản</span>
+                      <span className="fw-bold text-primary fs-6">24315887</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span className="text-muted">Số tiền</span>
+                      <span className="fw-bold text-danger fs-6">{totalPrice.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span className="text-muted">Nội dung CK</span>
+                      <span className="fw-bold text-dark">DLV {booking._id.substring(0,6).toUpperCase()}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-muted small">Sau khi chuyển khoản thành công, hệ thống sẽ tự động xác nhận đơn hàng của bạn.</p>
+
+                  <div className="d-flex gap-2 mt-3">
+                    <button className="btn btn-outline-secondary w-50 fw-bold" onClick={() => setShowQrInfo(false)}>
+                      Quay lại
+                    </button>
+                    <button className="btn btn-success w-50 fw-bold" onClick={executePaymentAPI} disabled={processing}>
+                      {processing ? 'Đang lưu...' : 'Đã chuyển'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { createBooking, getAllBookings, updatePaymentStatus, getUserBookings, trackOrder } = require('../controllers/bookingController');
+const { getAllBlogs, getBlogById, createBlog, updateBlog, deleteBlog } = require('../controllers/blogController');
 
-// Khai báo các đường dẫn API
-router.post('/', createBooking);
-router.get('/', getAllBookings);
-router.get('/track', trackOrder); // API tra cứu (Phải để trên các API có :id)
-router.put('/:id/pay', updatePaymentStatus); // API để xử lý thanh toán QR
-router.get('/user/:userId', getUserBookings);
+// Khai báo các đường dẫn API cho Blog
+router.get('/', getAllBlogs);
+router.get('/:id', getBlogById);
+router.post('/', createBlog);
+router.put('/:id', updateBlog);
+router.delete('/:id', deleteBlog);
 
 module.exports = router;
