@@ -46,7 +46,11 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/tours/:id" element={<TourDetails />} />
+              
+              {/* DÙNG CHUNG GIAO DIỆN DANH SÁCH TOUR CHO CẢ TRONG NƯỚC VÀ QUỐC TẾ */}
               <Route path="/tour-trong-nuoc" element={<TourList />} />
+              <Route path="/tour-quoc-te" element={<TourList />} /> 
+              
               <Route path="/gioi-thieu" element={<About />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:id" element={<BlogDetail />} />

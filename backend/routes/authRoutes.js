@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { register, login } = require('../controllers/authController');
+const { register, login, getAllUsers, updateUser, deleteUser } = require('../controllers/authController');
 
-// Khai báo 2 đường dẫn gọi đến 2 hàm vừa viết
 router.post('/register', register);
 router.post('/login', login);
+router.get('/users', getAllUsers);
+
+// THÊM 2 ĐƯỜNG DẪN MỚI
+router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 
 module.exports = router;

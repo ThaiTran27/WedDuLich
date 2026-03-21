@@ -116,6 +116,13 @@ function PaymentSandbox() {
   if (!booking) return null;
 
   const totalPrice = booking.totalPrice || 0;
+  const beneficiaryAccount = '24315887';
+  const beneficiaryBankCode = 'acb';
+  const beneficiaryName = 'CONG TY TNHH DU LICH VIET';
+  const orderContent = `DLV ${booking._id.substring(0,6).toUpperCase()}`;
+
+  const deeplinkUrl = `https://dl.vietqr.io/pay?ba=${encodeURIComponent(beneficiaryAccount + '@' + beneficiaryBankCode)}&am=${totalPrice}&bn=${encodeURIComponent(beneficiaryName)}&tn=${encodeURIComponent(orderContent)}&url=${encodeURIComponent(window.location.href)}`;
+  const maybeVietqrScheme = `vietqr://pay?ba=${encodeURIComponent(beneficiaryAccount + '@' + beneficiaryBankCode)}&am=${totalPrice}&bn=${encodeURIComponent(beneficiaryName)}&tn=${encodeURIComponent(orderContent)}&url=${encodeURIComponent(window.location.href)}`;
 
   return (
     <div className="bg-light pb-5" style={{ paddingTop: '90px', minHeight: '100vh' }}>

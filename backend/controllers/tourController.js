@@ -3,6 +3,7 @@ const Tour = require('../models/Tour');
 // 1. [POST] /api/tours - Tạo tour mới (Dành cho Admin)
 const createTour = async (req, res) => {
   try {
+    // req.body bây giờ sẽ tự động chứa cả category và featured từ form Frontend gửi lên
     const newTour = new Tour(req.body);
     const savedTour = await newTour.save();
     
@@ -49,8 +50,8 @@ const updateTour = async (req, res) => {
   try {
     const updatedTour = await Tour.findByIdAndUpdate(
       id,
-      { $set: req.body },
-      { new: true } // Trả về dữ liệu mới sau khi đã update
+      { $set: req.body }, // Cập nhật toàn bộ data từ Frontend, bao gồm cả nút gạt Nổi Bật
+      { new: true } 
     );
     res.status(200).json({
       success: true,

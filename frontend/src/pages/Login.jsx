@@ -60,14 +60,14 @@ function Login() {
         {/* TAB CHUYỂN ĐỔI */}
         <div className="d-flex text-center border-bottom">
           <div 
-            className={`w-50 py-3 fw-bold cursor-pointer transition-all ${!isAdmin ? 'bg-info text-white' : 'text-secondary'}`}
+            className={`w-50 py-3 fw-bold cursor-pointer transition-all ${!isAdmin ? 'bg-info text-white' : 'text-secondary bg-white'}`}
             style={{ cursor: 'pointer' }}
             onClick={() => setIsAdmin(false)}
           >
             KHÁCH HÀNG
           </div>
           <div 
-            className={`w-50 py-3 fw-bold cursor-pointer transition-all ${isAdmin ? 'bg-dark text-white' : 'text-secondary'}`}
+            className={`w-50 py-3 fw-bold cursor-pointer transition-all ${isAdmin ? 'bg-dark text-white' : 'text-secondary bg-white'}`}
             style={{ cursor: 'pointer' }}
             onClick={() => setIsAdmin(true)}
           >
@@ -86,21 +86,31 @@ function Login() {
               <label className="form-label fw-bold small text-secondary">Email đăng nhập</label>
               <input 
                 type="email" name="email" className="form-control rounded-pill px-4 py-2 border-0 bg-light" 
-                placeholder="thai_test@gmail.com" onChange={handleChange} required 
+                placeholder="email@example.com" onChange={handleChange} required 
               />
             </div>
 
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="form-label fw-bold small text-secondary">Mật khẩu</label>
               <input 
                 type="password" name="password" className="form-control rounded-pill px-4 py-2 border-0 bg-light" 
-                placeholder="•••••" onChange={handleChange} required 
+                placeholder="••••••••" onChange={handleChange} required 
               />
             </div>
 
-            <div className="text-end mb-4">
-              <Link to="/forgot-password" size="small" className="text-info text-decoration-none small fw-bold">Quên mật khẩu?</Link>
-            </div>
+            {/* XỬ LÝ ẨN/HIỆN NÚT QUÊN MẬT KHẨU TẠI ĐÂY */}
+            {!isAdmin ? (
+              <div className="text-end mb-4">
+                <Link to="/forgot-password" size="small" className="text-info text-decoration-none small fw-bold">Quên mật khẩu?</Link>
+              </div>
+            ) : (
+              <div className="text-center mb-4 mt-3">
+                <small className="text-danger fst-italic" style={{fontSize: '12px'}}>
+                  <i className="bi bi-shield-lock me-1"></i>
+                  * Để khôi phục mật khẩu vui lòng liên hệ phòng Quản trị.
+                </small>
+              </div>
+            )}
 
             <button 
               type="submit" 

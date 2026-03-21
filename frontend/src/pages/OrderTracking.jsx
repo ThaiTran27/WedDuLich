@@ -13,30 +13,30 @@ function OrderTracking() {
     e.preventDefault();
     if (!searchValue.trim()) return;
 
-    if (searchType === 'phone') {
-      setError('Tính năng tra cứu bằng Số điện thoại đang bảo trì bảo mật. Vui lòng sử dụng Mã đơn hàng.');
-      setOrderResult(null);
-      return;
-    }
-
     setLoading(true);
     setError('');
     setOrderResult(null);
 
     try {
-      const res = await axios.get(`http://127.0.0.1:5000/api/bookings/track?code=${searchValue}`);
+      // Vệ sinh sạch sẽ dấu # và khoảng trắng trước khi gửi đi
+      const cleanValue = searchValue.replace(/#/g, '').trim();
+      
+      // Gửi đi bằng tham số an toàn
+      const queryParam = searchType === 'code' ? `code=${cleanValue}` : `phone=${cleanValue}`;
+      const res = await axios.get(`http://127.0.0.1:5000/api/bookings/track?${queryParam}`);
+      
       if (res.data.success && res.data.data.length > 0) {
         setOrderResult(res.data.data[0]);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại Mã đơn.');
+      // Bảng đỏ sẽ in ra chính xác lỗi từ Backend để bắt bệnh
+      setError(err.response?.data?.message || 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại thông tin.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    // THÊM BACKGROUND ẢNH MỜ VÀ GRADIENT ĐỂ NHÌN SANG TRỌNG HƠN
     <div className="position-relative min-vh-100 d-flex align-items-center py-5" style={{
         backgroundImage: 'linear-gradient(rgba(240, 248, 255, 0.9), rgba(240, 248, 255, 0.9)), url("https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2000&q=80")',
         backgroundSize: 'cover',
@@ -47,10 +47,8 @@ function OrderTracking() {
         <div className="row justify-content-center">
           <div className="col-12 col-lg-8 col-xl-7">
             
-            {/* KHUNG MAIN CARD SIÊU BO GÓC */}
             <div className="card border-0 shadow-lg rounded-5 overflow-hidden">
               
-              {/* HEADER GRADIENT XANH DƯƠNG MƯỢT MÀ */}
               <div className="p-4 p-md-5 text-white text-center position-relative" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' }}>
                  <div className="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center mx-auto mb-3" style={{ width: '60px', height: '60px' }}>
                    <i className="bi bi-search fs-3"></i>
@@ -59,26 +57,23 @@ function OrderTracking() {
                  <p className="text-white-50 mb-0">Theo dõi trạng thái lịch trình và thông tin thanh toán của bạn</p>
               </div>
 
-              {/* BODY FORM */}
               <div className="card-body p-4 p-md-5 bg-white">
                 
-                {/* NÚT CHỌN TABS */}
                 <div className="d-flex justify-content-center gap-3 mb-4">
                   <button 
                     className={`btn rounded-pill px-4 py-2 fw-bold transition-all ${searchType === 'code' ? 'btn-primary shadow' : 'bg-light text-secondary border hover-bg-secondary'}`}
-                    onClick={() => setSearchType('code')}
+                    onClick={() => { setSearchType('code'); setSearchValue(''); setError(''); setOrderResult(null); }}
                   >
                     <i className="bi bi-hash me-1"></i> Mã đơn
                   </button>
                   <button 
                     className={`btn rounded-pill px-4 py-2 fw-bold transition-all ${searchType === 'phone' ? 'btn-primary shadow' : 'bg-light text-secondary border hover-bg-secondary'}`}
-                    onClick={() => setSearchType('phone')}
+                    onClick={() => { setSearchType('phone'); setSearchValue(''); setError(''); setOrderResult(null); }}
                   >
                     <i className="bi bi-telephone me-1"></i> Số điện thoại
                   </button>
                 </div>
 
-                {/* Ô TÌM KIẾM DẠNG PILL (CHỨA CẢ NÚT BẤM BÊN TRONG) */}
                 <form onSubmit={handleTrackOrder}>
                   <div className="p-1 bg-white border rounded-pill shadow-sm d-flex align-items-center transition-all hover-shadow">
                     <span className="ps-4 text-primary border-0 bg-transparent">
@@ -87,7 +82,7 @@ function OrderTracking() {
                     <input 
                       type="text" 
                       className="form-control border-0 shadow-none bg-transparent px-3 py-3 fs-6" 
-                      placeholder={searchType === 'code' ? 'Nhập Mã đơn (ví dụ: 65f1a2...)' : 'Nhập số điện thoại đặt tour'} 
+                      placeholder={searchType === 'code' ? 'Nhập Mã đơn (ví dụ: 65f1a2)' : 'Nhập số điện thoại đặt tour'} 
                       value={searchValue}
                       onChange={(e) => setSearchValue(e.target.value)}
                       required
@@ -102,7 +97,6 @@ function OrderTracking() {
                   </div>
                 </form>
 
-                {/* THÔNG BÁO LỖI */}
                 {error && (
                   <div className="alert alert-danger mt-4 border-0 rounded-4 d-flex align-items-center shadow-sm animation-fade-in">
                     <i className="bi bi-exclamation-octagon-fill fs-4 me-3 text-danger"></i> 
@@ -117,27 +111,26 @@ function OrderTracking() {
               </div>
             </div>
 
-            {/* --- KẾT QUẢ ĐƠN HÀNG TRẢ VỀ SIÊU ĐẸP --- */}
+            {/* --- KẾT QUẢ ĐƠN HÀNG TRẢ VỀ --- */}
             {orderResult && (
               <div className="card border-0 shadow-lg rounded-5 overflow-hidden mt-4 animation-fade-in">
                 <div className="bg-success p-3 text-white text-center fw-bold d-flex justify-content-center align-items-center" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
-                  <i className="bi bi-check-circle-fill fs-5 me-2"></i> TÌM THẤY ĐƠN HÀNG CỦA BẠN
+                  <i className="bi bi-check-circle-fill fs-5 me-2"></i> TÌM THẤY ĐƠN HÀNG CỦA BẠN 
+                  {searchType === 'phone' && ' (MỚI NHẤT)'}
                 </div>
                 
                 <div className="card-body p-4 p-md-5">
                   <div className="row align-items-center">
-                    
-                    {/* Ảnh Tour */}
                     <div className="col-md-4 text-center text-md-start mb-4 mb-md-0">
                       <img 
                         src={orderResult.tourId?.image || "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=500&q=80"} 
                         className="img-fluid rounded-4 shadow" 
                         style={{ width: '100%', height: '160px', objectFit: 'cover' }} 
                         alt="Tour"
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=800&q=80'; }}
                       />
                     </div>
                     
-                    {/* Chi tiết Đơn */}
                     <div className="col-md-8 ps-md-4">
                       <div className="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
                         <h4 className="fw-bold text-dark mb-0">{orderResult.tourId?.title || 'Tour không xác định'}</h4>
@@ -167,7 +160,6 @@ function OrderTracking() {
                         </div>
                       </div>
 
-                      {/* Nút đi tới Thanh toán nếu chưa thanh toán */}
                       {orderResult.status !== 'paid' && (
                         <div className="text-end">
                           <Link to={`/payment/${orderResult._id}`} className="btn btn-danger rounded-pill px-5 py-2 fw-bold shadow hover-scale transition-all">

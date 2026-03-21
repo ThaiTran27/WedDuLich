@@ -10,6 +10,10 @@ const tourSchema = new mongoose.Schema(
     image: { type: String, required: true },
     availableSeats: { type: Number, required: true },
     featured: { type: Boolean, default: false },
+    
+    // --- TRƯỜNG MỚI THÊM: Danh mục tour ---
+    category: { type: String, default: "" }, 
+    
     // Các trường bổ sung
     startDate: { type: String, default: 'Khởi hành hằng ngày' },
     endDate: { type: String, default: 'Theo lịch trình' },
