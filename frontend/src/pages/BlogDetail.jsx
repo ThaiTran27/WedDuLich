@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { resolveImageUrl } from '../utils/imagePath';
+import { resolveImageUrl } from '../../public/assets/img/index/imagePath'; // Đã sửa lại đường dẫn import cho đúng cấu trúc của bạn
 
 function BlogDetail() {
   const { id } = useParams();
@@ -13,9 +13,7 @@ function BlogDetail() {
     const fetchBlog = async () => {
       try {
         const res = await axios.get(`http://127.0.0.1:5000/api/blogs/${id}`);
-        // Hỗ trợ cả 2 kiểu trả về: { success: true, data: {...} } hoặc {...}
-        const payload = res.data;
-        const data = payload?.data || payload;
+        const data = res.data?.data || res.data;
         setBlog(data);
       } catch (err) {
         setError('Không tìm thấy bài viết hoặc lỗi kết nối tới server.');
@@ -47,39 +45,65 @@ function BlogDetail() {
   }
 
   return (
-    <div className="bg-white min-vh-100 pt-5 mt-4">
-      {/* Ảnh bìa bài viết */}
-      <div style={{ height: '400px', background: `url(${resolveImageUrl(blog.image)}) center/cover`, position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }}></div>
-        <div className="container position-relative z-1 h-100 d-flex flex-column justify-content-end pb-5 text-white">
-          <Link to="/blog" className="text-white text-decoration-none mb-3 d-inline-block hover-info">
-            <i className="bi bi-arrow-left me-2"></i> Quay lại Blog
+    <div className="bg-white min-vh-100" style={{ paddingTop: '80px' }}>
+      {/* Ảnh bìa bài viết với Overlay */}
+      <div 
+        className="position-relative d-flex align-items-end" 
+        style={{ 
+          height: '500px', 
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.7)), url(${resolveImageUrl(blog.image)})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="container pb-5 text-white">
+          <Link to="/blog" className="text-white text-decoration-none mb-4 d-inline-block p-2 rounded-pill bg-white bg-opacity-25 shadow-sm">
+            <i className="bi bi-arrow-left ms-2 me-2"></i> Quay lại danh sách
           </Link>
-          <h1 className="display-4 fw-bold mb-3">{blog.title}</h1>
-          <div className="d-flex gap-4">
-            <span><i className="bi bi-person-circle me-2"></i>{blog.author || 'Admin'}</span>
-            <span><i className="bi bi-calendar3 me-2"></i>{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('vi-VN') : blog.date}</span>
+          <div className="badge bg-info mb-3 px-3 py-2 rounded-pill">{blog.category}</div>
+          <h1 className="display-3 fw-bold mb-4" style={{ textShadow: '2px 2px 10px rgba(0,0,0,0.5)' }}>{blog.title}</h1>
+          <div className="d-flex gap-4 fs-5 opacity-90">
+            <span><i className="bi bi-person-circle me-2"></i>{blog.author?.name || 'Admin'}</span>
+            <span><i className="bi bi-calendar3 me-2"></i>{new Date(blog.createdAt).toLocaleDateString('vi-VN')}</span>
           </div>
         </div>
       </div>
 
-      {/* Nội dung chi tiết */}
+      {/* Nội dung chi tiết bài viết */}
       <div className="container py-5">
         <div className="row justify-content-center">
-          <div className="col-lg-8">
-            <div className="fs-5 text-secondary" style={{ lineHeight: '1.8', whiteSpace: 'pre-line', textAlign: 'justify' }}>
-              {blog.content}
-            </div>
-            
-            <hr className="my-5" />
-            
-            <div className="d-flex justify-content-between align-items-center bg-light p-4 rounded-4">
-              <span className="fw-bold">Chia sẻ bài viết này:</span>
-              <div className="d-flex gap-2">
-                <button className="btn btn-primary rounded-circle"><i className="bi bi-facebook"></i></button>
-                <button className="btn btn-info text-white rounded-circle"><i className="bi bi-twitter"></i></button>
-                <button className="btn btn-danger rounded-circle"><i className="bi bi-pinterest"></i></button>
+          <div className="col-lg-9 col-xl-8">
+            <article className="blog-content">
+              {/* Đoạn text này sẽ hiển thị đúng định dạng bạn nhập trong Admin */}
+              <div 
+                className="text-dark lh-lg" 
+                style={{ 
+                  fontSize: '1.2rem', 
+                  whiteSpace: 'pre-line', 
+                  textAlign: 'justify' 
+                }}
+              >
+                {blog.content}
               </div>
+            </article>
+            
+            <hr className="my-5 opacity-25" />
+            
+            {/* Thanh chia sẻ bài viết */}
+            <div className="d-flex flex-wrap justify-content-between align-items-center bg-light p-4 rounded-5 shadow-sm border border-white">
+              <span className="fw-bold text-dark fs-5"><i className="bi bi-share-fill me-2 text-primary"></i>Chia sẻ bài viết:</span>
+              <div className="d-flex gap-3">
+                <button className="btn btn-primary rounded-circle shadow-sm" style={{width: '45px', height: '45px'}}><i className="bi bi-facebook"></i></button>
+                <button className="btn btn-info text-white rounded-circle shadow-sm" style={{width: '45px', height: '45px'}}><i className="bi bi-twitter"></i></button>
+                <button className="btn btn-danger rounded-circle shadow-sm" style={{width: '45px', height: '45px'}}><i className="bi bi-messenger"></i></button>
+              </div>
+            </div>
+
+            {/* Điều hướng bài viết khác */}
+            <div className="mt-5 text-center">
+              <Link to="/blog" className="btn btn-outline-info rounded-pill px-5 py-3 fw-bold">
+                KHÁM PHÁ CÁC BÀI VIẾT KHÁC
+              </Link>
             </div>
           </div>
         </div>

@@ -15,8 +15,8 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const TourList = lazy(() => import('./pages/TourList'));
 const About = lazy(() => import('./pages/About'));
-const Blog = lazy(() => import('./pages/Blog'));
-const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+const Blog = lazy(() => import('./pages/Blog')); // Trang danh sách bài viết
+const BlogDetail = lazy(() => import('./pages/BlogDetail')); // Trang nội dung bài viết
 const Contact = lazy(() => import('./pages/Contact'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Policy = lazy(() => import('./pages/Policy'));
@@ -52,13 +52,14 @@ function App() {
               <Route path="/tour-quoc-te" element={<TourList />} /> 
               
               <Route path="/gioi-thieu" element={<About />} />
+              
+              {/* HỆ THỐNG BLOG ĐÃ FIX ĐƯỜNG DẪN ĐỒNG BỘ backend */}
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:id" element={<BlogDetail />} />
+              
               <Route path="/lien-he" element={<Contact />} />
               <Route path="/bang-gia" element={<Pricing />} />
               <Route path="/chinh-sach" element={<Policy />} />
-              
-              {/* ĐÃ THÊM ROUTE TRA CỨU VÀO ĐÂY */}
               <Route path="/tra-cuu" element={<OrderTracking />} />
 
               {/* --- CÁC TRANG CẦN ĐĂNG NHẬP THƯỜNG --- */}
