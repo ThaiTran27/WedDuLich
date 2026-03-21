@@ -2,10 +2,16 @@ const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema(
   {
+    // TourID và BlogID để required: false để linh hoạt
     tourId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tour',
-      required: true,
+      required: false 
+    },
+    blogId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Blog',
+      required: false 
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -14,9 +20,9 @@ const reviewSchema = new mongoose.Schema(
     },
     rating: {
       type: Number,
-      required: true,
       min: 1,
-      max: 5, // Đánh giá từ 1 đến 5 sao
+      max: 5,
+      default: 5,
     },
     comment: {
       type: String,
@@ -24,7 +30,7 @@ const reviewSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: 'approved', // Có thể thêm trạng thái 'pending' nếu Admin muốn duyệt trước khi hiện
+      default: 'approved',
     }
   },
   { timestamps: true }
