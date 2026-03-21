@@ -3,17 +3,21 @@ const router = express.Router();
 const { 
   createReview, 
   getTourReviews, 
-  getBlogReviews, // Đảm bảo hàm này đã được viết trong Controller
+  getBlogReviews, // Thêm hàm này
+  getAllReviews,  // Thêm hàm này cho Admin
   deleteReview 
 } = require('../controllers/reviewController');
 
-// Gửi đánh giá (dùng chung cho cả Tour và Blog)
+// 1. Gửi đánh giá (Dùng chung cho cả Tour và Blog)
 router.post('/', createReview);
 
-// Lấy đánh giá của Tour
+// 2. Lấy TẤT CẢ đánh giá (Dành cho trang Quản trị Admin)
+router.get('/all', getAllReviews); 
+
+// 3. Lấy đánh giá của 1 Tour cụ thể
 router.get('/:tourId', getTourReviews);
 
-// Lấy bình luận của Blog (PHẢI THÊM DÒNG NÀY)
+// 4. Lấy bình luận của 1 bài Blog cụ thể (QUAN TRỌNG: Fix lỗi 404)
 router.get('/blog/:blogId', getBlogReviews); 
 
 router.delete('/:id', deleteReview);

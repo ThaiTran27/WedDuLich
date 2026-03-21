@@ -1,55 +1,47 @@
-🌏 DU LỊCH VIỆT - TOURISM MANAGEMENT SYSTEM
-Dự án Website quản lý và đặt tour du lịch được phát triển bằng bộ công nghệ MERN Stack. Hệ thống cung cấp trải nghiệm mượt mà từ việc tìm kiếm tour, đặt chỗ cho đến thanh toán giả lập.
+# 🌍 Website Quản Lý Đặt Tour Du Lịch - Du Lịch Việt
 
-🚀 Tính năng nổi bật
-Hệ thống tài khoản: * Đăng ký, Đăng nhập (Bảo mật bằng mật khẩu băm Bcrypt).
+Dự án Đồ án môn học / Khóa luận tốt nghiệp xây dựng hệ thống quản lý và đặt tour du lịch trực tuyến sử dụng mô hình **MERN Stack** (MongoDB, Express, ReactJS, NodeJS).
 
-Khôi phục mật khẩu (Forgot Password).
+## 🚀 Tính năng chính
 
-Lời chào cá nhân hóa trên Navbar theo tên người dùng.
+### 👤 Dành cho Khách hàng (User)
+* **Khám phá Tour:** Xem danh sách tour trong nước/quốc tế, lọc và tìm kiếm thông tin chi tiết.
+* **Đặt Tour (Booking):** Đặt tour trực tuyến, chọn số lượng khách và tính tổng tiền tự động.
+* **Thanh toán:** Tích hợp quy trình thanh toán giả lập (Sandbox) an toàn.
+* **Blog & Cẩm nang:** Đọc bài viết chia sẻ kinh nghiệm và thảo luận.
+* **Đánh giá & Bình luận:** Chấm điểm 5 sao cho Tour và để lại bình luận tương tác tại các bài viết.
+* **Quản lý cá nhân:** Theo dõi lịch sử đơn hàng và cập nhật thông tin tài khoản.
 
-Quản lý Tour:
+### 👨‍💼 Dành cho Quản trị viên (Admin)
+* **Dashboard:** Thống kê tổng quan về doanh thu, số lượng khách hàng và tour phổ biến.
+* **Quản lý Tour:** Toàn quyền Thêm, Sửa, Xóa (CRUD) các gói tour du lịch.
+* **Quản lý Blog:** Biên tập và đăng tải nội dung cẩm nang du lịch.
+* **Duyệt Đơn hàng:** Quản lý trạng thái thanh toán và thông tin khách đặt tour.
+* **Quản trị Thành viên:** Theo dõi danh sách người dùng trên hệ thống.
+* **Kiểm duyệt Bình luận:** Quản lý và xóa các phản hồi không phù hợp.
 
-Hiển thị danh sách Tour đa dạng (Trong nước & Quốc tế).
+## 🛠 Công nghệ sử dụng
 
-Xem chi tiết Tour với hình ảnh, lịch trình và mô tả chi tiết.
+* **Frontend:** React.js (Vite), Tailwind CSS, Bootstrap 5, Axios, React Router Dom.
+* **Backend:** Node.js, Express.js.
+* **Database:** MongoDB & Mongoose (ODM).
+* **Xác thực:** JSON Web Token (JWT) & Bcrypt.js.
+* **Công cụ khác:** Dotenv, CORS, PlantUML (vẽ sơ đồ hệ thống).
 
-Đặt Tour & Thanh toán:
+## 📦 Cấu trúc thư mục
 
-Tính toán tổng tiền dựa trên số lượng hành khách.
-
-Hệ thống Payment Sandbox (Thanh toán giả lập) để kiểm tra luồng tiền đơn hàng.
-
-Giao diện (UI/UX):
-
-Thiết kế hiện đại, responsive hoàn toàn (đã fix lỗi Navbar ẩn hiện trên máy tính).
-
-Sử dụng hiệu ứng Glassmorphism (Kính mờ) cho các form đăng nhập.
-
-🛠 Công nghệ sử dụng
-Frontend: React.js, React Router v6, Axios, Bootstrap 5, Bootstrap Icons.
-
-Backend: Node.js, Express.js.
-
-Database: MongoDB (Mongoose ODM).
-
-Bảo mật: JSON Web Token (JWT), Bcrypt.js.
-
-Công cụ: Docker (hỗ trợ triển khai), VS Code, MongoDB Compass.
-
-📁 Cấu trúc thư mục
-
-/du-lich-viet
-├── /backend
-│   ├── /config          # Kết nối Database
-│   ├── /controllers     # Logic xử lý (Auth, Tour, Booking)
-│   ├── /models          # Schema dữ liệu MongoDB
-│   ├── /routes          # Định nghĩa các API endpoint
-│   └── server.js        # File chạy chính của Backend
-├── /frontend
-│   ├── /src
-│   │   ├── /components  # Navbar, Footer, v.v.
-│   │   ├── /pages       # Home, Login, Register, TourDetails, Payment...
-│   │   ├── App.jsx      # Cấu hình Routes
-│   │   └── main.jsx     # Điểm khởi đầu của React
+```text
+quan-ly-du-lich/
+├── backend/            # Mã nguồn phía máy chủ
+│   ├── config/         # Kết nối Database
+│   ├── controllers/    # Xử lý logic nghiệp vụ
+│   ├── models/         # Định nghĩa cấu trúc dữ liệu (Schema)
+│   ├── routes/         # Định nghĩa các đường dẫn API
+│   └── server.js       # Điểm khởi đầu của server
+├── frontend/           # Mã nguồn phía giao diện người dùng
+│   ├── public/         # Tài nguyên tĩnh (Ảnh, Icon)
+│   ├── src/
+│   │   ├── components/ # Các thành phần giao diện dùng chung
+│   │   └── pages/      # Các trang chính của ứng dụng
+│   └── App.jsx         # Cấu hình Route chính
 └── README.md
