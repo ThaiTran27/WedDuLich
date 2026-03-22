@@ -7,6 +7,7 @@ function Login() {
   const [isAdmin, setIsAdmin] = useState(false); // Trạng thái: Đang đăng nhập với quyền gì?
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -92,10 +93,24 @@ function Login() {
 
             <div className="mb-3">
               <label className="form-label fw-bold small text-secondary">Mật khẩu</label>
-              <input 
-                type="password" name="password" className="form-control rounded-pill px-4 py-2 border-0 bg-light" 
-                placeholder="••••••••" onChange={handleChange} required 
-              />
+              <div className="position-relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  name="password" 
+                  className="form-control rounded-pill px-4 py-2 border-0 bg-light pe-5" 
+                  placeholder="••••••••" 
+                  onChange={handleChange} 
+                  required 
+                />
+                <button 
+                  type="button" 
+                  className="btn position-absolute end-0 top-50 translate-middle-y me-3 border-0 bg-transparent text-secondary" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ zIndex: 5 }}
+                >
+                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                </button>
+              </div>
             </div>
 
             {/* XỬ LÝ ẨN/HIỆN NÚT QUÊN MẬT KHẨU TẠI ĐÂY */}
