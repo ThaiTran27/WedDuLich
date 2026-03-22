@@ -45,3 +45,5 @@ quan-ly-du-lich/
 │   │   └── pages/      # Các trang chính của ứng dụng
 │   └── App.jsx         # Cấu hình Route chính
 └── README.md
+Sơ đồ Use Case tổng quát
+![alt](../quan-ly-du-lich/frontend/public/assets/img/Sơ%20đồ%20UC.png)
