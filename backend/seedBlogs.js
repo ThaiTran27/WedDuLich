@@ -1,66 +1,146 @@
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 const Blog = require('./models/Blog');
-require('dotenv').config();
 
-const blogsData = [
-  { 
-    category: 'Cẩm Nang Du Lịch', 
-    title: 'Du lịch miền Tây có gì vui? Kinh nghiệm đi miền Tây tự túc', 
-    excerpt: 'Du lịch miền Tây hấp dẫn bởi chợ nổi, miệt vườn, sông nước, ẩm thực dân dã và nhịp sống rất đỗi bình yên...', 
-    content: 'Miền Tây Nam Bộ, hay còn gọi là Đồng bằng sông Cửu Long, luôn mang một vẻ đẹp mộc mạc, bình dị. Đến đây, bạn không chỉ được ngắm nhìn những cánh đồng lúa bát ngát, những vườn trái cây trĩu quả mà còn được trải nghiệm văn hóa chợ nổi đặc trưng. Thời điểm lý tưởng nhất để đi miền Tây là mùa nước nổi (từ tháng 9 đến tháng 11) hoặc mùa trái cây chín (tháng 6 đến tháng 8).',
-    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80', 
+dotenv.config();
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Đã kết nối MongoDB - Đang đổ 16 bài Blog mẫu..."))
+  .catch(err => console.error("❌ Lỗi kết nối:", err));
+
+const blogs = [
+  // ========================== 1. CẨM NANG DU LỊCH ==========================
+  {
+    title: "Bí kíp du lịch Miền Tây mùa nước nổi từ A-Z",
+    content: "Mùa nước nổi Miền Tây thường bắt đầu từ tháng 8 đến tháng 11 âm lịch. Đây là thời điểm tuyệt vời nhất để trải nghiệm nét văn hóa sông nước độc đáo...",
+    category: "Cẩm Nang Du Lịch",
+    image: "/assets/img/index/tour-1.jpg",
+    featured: true
   },
-  { 
-    category: 'Cẩm Nang Du Lịch', 
-    title: 'Gợi ý tour lễ 30/4 1/5 nổi bật: Lịch trình chi tiết', 
-    excerpt: 'Tổng hợp các tour lễ 30/4 1/5 đáng quan tâm cho kỳ nghỉ sắp tới, giúp bạn dễ chọn hành trình phù hợp...', 
-    content: 'Kỳ nghỉ lễ 30/4 và 1/5 năm nay kéo dài, đây là thời điểm tuyệt vời để gia đình bạn có một chuyến đi xa. Nếu bạn thích biển, Phú Quốc và Nha Trang là lựa chọn hàng đầu. Nếu bạn muốn tìm về thiên nhiên trong lành, Đà Lạt hoặc các tỉnh miền Tây Nam Bộ sẽ không làm bạn thất vọng. Hãy đặt tour sớm để tránh tình trạng hết phòng và vé máy bay tăng cao nhé!',
-    image: 'https://images.unsplash.com/photo-1555921015-c2848f1c26e4?auto=format&fit=crop&w=800&q=80', 
+  {
+    title: "5 món đồ không thể thiếu khi đi tour quốc tế",
+    content: "Để có một chuyến đi nước ngoài trọn vẹn, bạn cần chuẩn bị kỹ lưỡng về hộ chiếu, bảo hiểm du lịch, ổ cắm điện đa năng...",
+    category: "Cẩm Nang Du Lịch",
+    image: "/assets/img/index/tour-3.jpg",
+    featured: false
   },
-  { 
-    category: 'Cẩm Nang Du Lịch', 
-    title: 'Kinh nghiệm chọn tour miền Tây phù hợp cho gia đình', 
-    excerpt: 'Nếu bạn đang tìm một tour miền Tây phù hợp từ TP.HCM nhưng chưa biết nên chọn lịch trình nào, hãy xem ngay...', 
-    content: 'Đi du lịch với gia đình, đặc biệt là có người già và trẻ nhỏ, đòi hỏi lịch trình phải thoải mái, không di chuyển quá nhiều. Bạn nên chọn các tour nghỉ dưỡng kết hợp sinh thái như tour Mỹ Tho - Bến Tre (1 ngày) hoặc Cần Thơ - Chợ nổi Cái Răng (2 ngày 1 đêm). Nhớ mang theo thuốc chống muỗi và trang phục thoáng mát nhé.',
-    image: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=800&q=80', 
+  {
+    title: "Làm sao để săn được tour giá rẻ mà chất lượng?",
+    content: "Việc lựa chọn thời điểm đặt tour và theo dõi các chương trình khuyến mãi của các công ty uy tín là chìa khóa giúp bạn tiết kiệm chi phí...",
+    category: "Cẩm Nang Du Lịch",
+    image: "/assets/img/index/ha-noi-en-370x370.jpg",
+    featured: false
   },
-  { 
-    category: 'Đặc Sản Miền Tây', 
-    title: 'Top 5 món ngon phải thử khi đến Cần Thơ', 
-    excerpt: 'Đến Cần Thơ gạo trắng nước trong, đừng bỏ lỡ cơ hội thưởng thức lẩu mắm, bánh xèo dạ cổ, và bún quậy nức tiếng...', 
-    content: '1. Lẩu mắm Dạ Lý: Nước lẩu đậm đà ăn kèm hàng chục loại rau tập tàng.\n2. Bánh xèo Mười Xiềm: Vỏ bánh mỏng giòn rụm, nhân tôm thịt đầy đặn.\n3. Vịt nấu chao: Món ăn đặc trưng với vị béo ngậy của chao và khoai môn.\n4. Bánh cống: Giòn rụm, ăn kèm rau sống và nước mắm chua ngọt.\n5. Trái cây miệt vườn: Đừng quên thưởng thức sầu riêng, chôm chôm, măng cụt hái tận cây.',
-    image: 'https://images.unsplash.com/photo-1628746355325-2e6d628eb4b4?auto=format&fit=crop&w=800&q=80', 
+  {
+    title: "Những lưu ý an toàn khi tham gia tour lặn ngắm san hô",
+    content: "Lặn biển là hoạt động thú vị nhưng đòi hỏi bạn phải tuân thủ nghiêm ngặt các quy tắc an toàn và hướng dẫn của chuyên gia...",
+    category: "Cẩm Nang Du Lịch",
+    image: "/assets/img/index/tour-4.jpg",
+    featured: false
   },
-  { 
-    category: 'Địa Điểm Du Lịch', 
-    title: 'Review Tour Miền Tây 2 Ngày 1 Đêm: Mỹ Tho - Cần Thơ', 
-    excerpt: 'Trải nghiệm tour miền Tây 2 ngày 1 đêm: tham quan Mỹ Tho, Bến Tre, Cần Thơ, chợ nổi Cái Răng cực kỳ chi tiết...', 
-    content: 'Ngày 1: Xuất phát từ TP.HCM đi Mỹ Tho, tham quan chùa Vĩnh Tràng, đi đò qua cồn Thới Sơn uống trà mật ong, nghe đờn ca tài tử. Chiều di chuyển xuống Cần Thơ nhận phòng.\nNgày 2: Dậy lúc 5h sáng đi chợ nổi Cái Răng, tham quan lò hủ tiếu, vườn trái cây. Thưởng thức đặc sản và lên xe về lại TP.HCM. Chuyến đi tuy ngắn nhưng mang lại trải nghiệm vô cùng đáng nhớ.',
-    image: 'https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?auto=format&fit=crop&w=800&q=80', 
+
+  // ========================== 2. ĐẶC SẢN MIỀN TÂY ==========================
+  {
+    title: "Kẹo dừa Bến Tre - Hương vị ngọt ngào của quê hương",
+    content: "Nhắc đến Bến Tre là nhắc đến xứ dừa. Kẹo dừa không chỉ là một món ăn chơi mà còn là kết tinh của sự khéo léo, cần cù của người dân nơi đây...",
+    category: "Đặc Sản Miền Tây",
+    image: "/assets/img/index/tour-1.jpg",
+    featured: true
   },
-  { 
-    category: 'Văn Hóa Miền Tây', 
-    title: 'Tìm hiểu nghệ thuật Đờn Ca Tài Tử Nam Bộ', 
-    excerpt: 'Đờn ca tài tử không chỉ là loại hình nghệ thuật đặc sắc mà còn là di sản văn hóa phi vật thể đại diện của nhân loại...', 
-    content: 'Đờn ca tài tử hình thành vào cuối thế kỷ 19, bắt nguồn từ nhạc cung đình Huế và nhã nhạc. Đây là loại hình nghệ thuật vừa mang tính bác học vừa mang tính dân gian. Người chơi đờn ca tài tử không phân biệt sang hèn, chỉ cần đam mê và có tâm hồn nghệ sĩ. Những buổi đờn ca thường diễn ra dưới bóng cây bến nước, trong sân chùa hay tại các miệt vườn sau giờ lao động mệt nhọc.',
-    image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=800&q=80', 
+  {
+    title: "Hủ tiếu Mỹ Tho - Đậm đà bản sắc vùng đất Tiền Giang",
+    content: "Sợi hủ tiếu dai ngon hòa quyện cùng nước dùng ngọt thanh từ xương ống tạo nên thương hiệu vang danh khắp cả nước...",
+    category: "Đặc Sản Miền Tây",
+    image: "/assets/img/index/Moc-Chau-370x370.jpg",
+    featured: false
+  },
+  {
+    title: "Bánh xèo miền Tây - Giòn rụm khó cưỡng",
+    content: "Chiếc bánh xèo vàng ươm, to tròn với nhân tôm thịt, giá đỗ ăn kèm với hàng chục loại rau rừng là món ăn không thể bỏ qua...",
+    category: "Đặc Sản Miền Tây",
+    image: "/assets/img/index/tour-2.jpg",
+    featured: false
+  },
+  {
+    title: "Mùa nào thức nấy: Các loại trái cây đặc trưng Miền Tây",
+    content: "Từ sầu riêng Cái Mơn, vú sữa Lò Rèn đến xoài cát Hòa Lộc, Miền Tây luôn đãi khách bằng những thức quà ngọt lành nhất...",
+    category: "Đặc Sản Miền Tây",
+    image: "/assets/img/index/co-hong-da-lat-760x370.jpg",
+    featured: false
+  },
+
+  // ========================== 3. ĐỊA ĐIỂM DU LỊCH ==========================
+  {
+    title: "Khám phá vẻ đẹp Cồn Phụng - Điểm đến lý tưởng tại Bến Tre",
+    content: "Nằm giữa dòng sông Tiền thơ mộng, Cồn Phụng không chỉ có cảnh sắc hữu tình mà còn có những công trình kiến trúc Đạo Dừa độc đáo...",
+    category: "Địa Điểm Du Lịch",
+    image: "/assets/img/index/about.png",
+    featured: true
+  },
+  {
+    title: "Chợ nổi Cái Răng - Nét văn hóa buôn bán trên sông",
+    content: "Tiếng máy nổ, tiếng mời gọi mua hàng và hàng trăm chiếc ghe chở đầy nông sản tạo nên một không khí nhộn nhịp khó quên...",
+    category: "Địa Điểm Du Lịch",
+    image: "/assets/img/index/tour-2.jpg",
+    featured: false
+  },
+  {
+    title: "Rừng tràm Trà Sư - Bức tranh thiên nhiên xanh mướt",
+    content: "Ngồi trên chiếc xuồng ba lá lướt nhẹ trên thảm bèo xanh, bạn sẽ cảm nhận được sự bình yên tuyệt đối của thiên nhiên An Giang...",
+    category: "Địa Điểm Du Lịch",
+    image: "/assets/img/index/ninh-binh-370x370.jpg",
+    featured: false
+  },
+  {
+    title: "Mũi Cà Mau - Nơi cuối cùng của bản đồ hình chữ S",
+    content: "Cột mốc tọa độ quốc gia và biểu tượng con tàu hướng ra biển khơi là niềm tự hào của mỗi người con Việt Nam khi đặt chân đến đây...",
+    category: "Địa Điểm Du Lịch",
+    image: "/assets/img/index/CamPha_QuanNinh_Carousel.jpg",
+    featured: false
+  },
+
+  // ========================== 4. VĂN HÓA MIỀN TÂY ==========================
+  {
+    title: "Đờn ca tài tử - Di sản văn hóa phi vật thể nhân loại",
+    content: "Âm thanh của tiếng đàn kìm, đàn tranh vang vọng giữa đêm trăng miệt vườn đã trở thành linh hồn của người dân Nam Bộ...",
+    category: "Văn Hóa Miền Tây",
+    image: "/assets/img/index/han-quoc-370x370.jpg", 
+    featured: true
+  },
+  {
+    title: "Lễ hội Ok Om Bok - Ngày hội lớn của người Khmer",
+    content: "Lễ hội cúng trăng và đua ghe Ngo là dịp để người dân cầu mong một mùa màng tươi tốt và thể hiện tinh thần đoàn kết cộng đồng...",
+    category: "Văn Hóa Miền Tây",
+    image: "/assets/img/index/tour-6.jpg",
+    featured: false
+  },
+  {
+    title: "Ý nghĩa chiếc áo bà ba và khăn rằn Nam Bộ",
+    content: "Hình ảnh người phụ nữ Miền Tây trong chiếc áo bà ba nền nã và chiếc khăn rằn quấn cổ đã trở thành biểu tượng của sự dịu dàng, đảm đang...",
+    category: "Văn Hóa Miền Tây",
+    image: "/assets/img/index/anh-cau-rong-da-nang-phun-lua-dep_111044330.jpg",
+    featured: false
+  },
+  {
+    title: "Tập quán sinh hoạt trên sông của người dân Tây Nam Bộ",
+    content: "Từ việc đi lại, giao thương đến các hoạt động sinh hoạt thường ngày, con nước luôn gắn liền với vận mệnh của con người nơi đây...",
+    category: "Văn Hóa Miền Tây",
+    image: "/assets/img/index/tour-1.jpg",
+    featured: false
   }
 ];
 
-const seedBlogs = async () => {
+const seedDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tour_db');
-    console.log("Đã kết nối MongoDB...");
-
-    await Blog.deleteMany(); // Xóa bài cũ nếu có
-    await Blog.insertMany(blogsData);
-    
-    console.log("🎉 THÀNH CÔNG! Đã đẩy dữ liệu Blog vào MongoDB.");
+    await Blog.deleteMany({});
+    console.log("🗑️ Đã dọn dẹp dữ liệu Blog cũ.");
+    await Blog.insertMany(blogs);
+    console.log("🌱 Đã đổ 16 bài Blog vào 4 danh mục thành công!");
     process.exit();
   } catch (error) {
-    console.error("Lỗi:", error);
+    console.error("❌ Lỗi:", error);
     process.exit(1);
   }
 };
 
-seedBlogs();
+seedDB();
