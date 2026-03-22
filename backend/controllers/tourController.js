@@ -3,7 +3,26 @@ const Tour = require('../models/Tour');
 // 1. [POST] /api/tours - Tạo tour mới (Dành cho Admin)
 const createTour = async (req, res) => {
   try {
-    // req.body bây giờ sẽ tự động chứa cả category và featured từ form Frontend gửi lên
+    // Kiểm tra dữ liệu bắt buộc
+    const { title, city, price, duration, availableSeats, startDate, endDate, image, description, category } = req.body;
+    
+    if (!title || !city || !price || !duration || !availableSeats || !startDate || !endDate || !image || !description || !category) {
+      return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin!' });
+    }
+    
+    // Kiểm tra kiểu dữ liệu
+    if (isNaN(price) || isNaN(availableSeats)) {
+      return res.status(400).json({ success: false, message: 'Giá và ghế phải là con số!' });
+    }
+    
+    if (Number(price) < 0 || Number(availableSeats) < 0) {
+      return res.status(400).json({ success: false, message: 'Giá không được âm, ghế >= 0!' });
+    }
+    
+    if (!duration || duration.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập thời lượng tour (VD: 3 ngày 2 đêm)!' });
+    }
+    
     const newTour = new Tour(req.body);
     const savedTour = await newTour.save();
     
@@ -13,6 +32,9 @@ const createTour = async (req, res) => {
       data: savedTour 
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Tên tour đã tồn tại!' });
+    }
     res.status(500).json({ success: false, message: 'Lỗi khi tạo tour', error: error.message });
   }
 };
@@ -48,18 +70,41 @@ const getTourById = async (req, res) => {
 const updateTour = async (req, res) => {
   const id = req.params.id;
   try {
+    const { title, city, price, duration, availableSeats, startDate, endDate, image, description, category } = req.body;
+    
+    // Kiểm tra dữ liệu nếu được cung cấp
+    if (price !== undefined && (isNaN(price) || Number(price) < 0)) {
+      return res.status(400).json({ success: false, message: 'Giá không được âm!' });
+    }
+    
+    if (duration !== undefined && (!duration || duration.trim() === '')) {
+      return res.status(400).json({ success: false, message: 'Thời lượng tour không được để trống!' });
+    }
+    
+    if (availableSeats !== undefined && (isNaN(availableSeats) || Number(availableSeats) < 0)) {
+      return res.status(400).json({ success: false, message: 'Số ghế không được âm!' });
+    }
+    
     const updatedTour = await Tour.findByIdAndUpdate(
       id,
-      { $set: req.body }, // Cập nhật toàn bộ data từ Frontend, bao gồm cả nút gạt Nổi Bật
-      { new: true } 
+      { $set: req.body },
+      { new: true, runValidators: true } 
     );
+    
+    if (!updatedTour) {
+      return res.status(404).json({ success: false, message: 'Tour không tồn tại!' });
+    }
+    
     res.status(200).json({
       success: true,
       message: "Cập nhật tour thành công!",
       data: updatedTour,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Lỗi khi cập nhật tour" });
+    if (err.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Tên tour đã tồn tại!' });
+    }
+    res.status(500).json({ success: false, message: "Lỗi khi cập nhật tour", error: err.message });
   }
 };
 
@@ -77,18 +122,26 @@ const deleteTour = async (req, res) => {
   }
 };
 
-// 6. [GET] /api/tours/search/getTourBySearch - Tìm kiếm tour theo tên hoặc thành phố
+// 6. [GET] /api/tours/search/getTourBySearch - Tìm kiếm tour theo tên, thành phố, danh mục
 const getTourBySearch = async (req, res) => {
-  const city = new RegExp(req.query.city, "i"); // "i" là không phân biệt hoa thường
   try {
-    const tours = await Tour.find({ city: city });
+    const { city, title, category } = req.query;
+    const query = {};
+    
+    if (city) query.city = new RegExp(city, "i");
+    if (title) query.title = new RegExp(title, "i");
+    if (category) query.category = new RegExp(category, "i");
+    
+    const tours = await Tour.find(query);
+    
     res.status(200).json({
       success: true,
-      message: "Tìm thấy kết quả",
+      message: tours.length > 0 ? "Tìm thấy kết quả" : "Không tìm thấy tour phù hợp",
+      count: tours.length,
       data: tours,
     });
   } catch (err) {
-    res.status(404).json({ success: false, message: "Không tìm thấy" });
+    res.status(500).json({ success: false, message: "Lỗi khi tìm kiếm", error: err.message });
   }
 };
 

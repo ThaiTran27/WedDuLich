@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { verifyAdmin } = require('../middleware/verifyToken');
 const { 
   createTour, 
   getAllTours, 
@@ -16,15 +17,15 @@ router.get('/search/getTourBySearch', getTourBySearch);
 router.get('/', getAllTours);
 
 // 3. Tạo tour mới (Admin)
-router.post('/', createTour);
+router.post('/', verifyAdmin, createTour);
 
 // 4. Lấy chi tiết 1 tour theo ID
 router.get('/:id', getTourById);
 
 // 5. Cập nhật thông tin tour (Admin)
-router.put('/:id', updateTour);
+router.put('/:id', verifyAdmin, updateTour);
 
 // 6. Xóa tour (Admin)
-router.delete('/:id', deleteTour);
+router.delete('/:id', verifyAdmin, deleteTour);
 
 module.exports = router;

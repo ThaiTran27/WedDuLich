@@ -30,17 +30,35 @@ function AdminDashboard() {
   const [isEditingUser, setIsEditingUser] = useState(false);
   const [userFormData, setUserFormData] = useState({ _id: '', name: '', email: '', phone: '', password: '', role: 'user' });
 
+  const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
+
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [availableImages, setAvailableImages] = useState([
+    'tour-1.jpg', 'tour-2.jpg', 'tour-3.jpg', 'tour-4.jpg', 'tour-5.jpg', 'tour-6.jpg',
+    'ha-noi-en-370x370.jpg', 'Moc-Chau-370x370.jpg', 'ninh-binh-370x370.jpg',
+    'CamPha_QuanNinh_Carousel.jpg', 'co-hong-da-lat-760x370.jpg', 'Vinh-ha-long.jpg',
+    'anh-cau-rong-da-nang-phun-lua-dep_111044330.jpg', 'Bà-Nà-2.jpg', 'cau-vang-ba-na-hills.jpg',
+    'han-quoc-370x370.jpg', 'tour-phansipan.png', 'about.png'
+  ]);
+  const [availableCategories, setAvailableCategories] = useState([]);
+
   useEffect(() => { fetchData(); }, []);
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ visible: true, message, type });
+    setTimeout(() => setNotification({ visible: false, message: '', type: 'success' }), 3000);
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [tourRes, bookRes, userRes, blogRes, reviewRes] = await Promise.all([
+      const [tourRes, bookRes, userRes, blogRes, reviewRes, catRes] = await Promise.all([
         axios.get('http://127.0.0.1:5000/api/tours'),
         axios.get('http://127.0.0.1:5000/api/bookings'),
         axios.get('http://127.0.0.1:5000/api/auth/users').catch(() => ({ data: { success: true, data: [] } })),
         axios.get('http://127.0.0.1:5000/api/blogs'),
-        axios.get('http://127.0.0.1:5000/api/reviews/all').catch(() => ({ data: { success: true, data: [] } }))
+        axios.get('http://127.0.0.1:5000/api/reviews/all').catch(() => ({ data: { success: true, data: [] } })),
+        axios.get('http://127.0.0.1:5000/api/categories').catch(() => ({ data: { success: true, data: [] } }))
       ]);
 
       setTours(tourRes.data.success ? tourRes.data.data : (tourRes.data || []));
@@ -48,6 +66,8 @@ function AdminDashboard() {
       setUsers(userRes.data.success ? userRes.data.data : (userRes.data || []));
       setBlogs(blogRes.data.success ? blogRes.data.data : []);
       setReviews(reviewRes.data?.data || []);
+      setAvailableCategories(catRes.data.success ? catRes.data.data.map(cat => cat.name) : []);
+      if (!catRes.data.success) showNotification('Không thể lấy danh mục từ server', 'danger');
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
     } finally {
@@ -157,18 +177,41 @@ function AdminDashboard() {
   };
 
   // --- CÁC HÀM XỬ LÝ (CRUD) GIỮ NGUYÊN BÊN DƯỚI ---
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    return { headers: { Authorization: `Bearer ${token}` } };
+  };
+
   const handleBlogInputChange = (e) => setBlogFormData({...blogFormData, [e.target.name]: e.target.value});
   const handleSubmitBlog = async (e) => {
     e.preventDefault();
     try {
-      if (isEditingBlog) await axios.put(`http://127.0.0.1:5000/api/blogs/${blogFormData._id}`, blogFormData);
-      else await axios.post('http://127.0.0.1:5000/api/blogs', blogFormData);
-      alert('Lưu bài viết thành công!');
+      const cfg = getAuthHeaders();
+      if (!cfg) {
+        showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger');
+        return;
+      }
+      if (isEditingBlog) await axios.put(`http://127.0.0.1:5000/api/blogs/${blogFormData._id}`, blogFormData, cfg);
+      else await axios.post('http://127.0.0.1:5000/api/blogs', blogFormData, cfg);
+      showNotification('Lưu bài viết thành công!', 'success');
       setShowBlogForm(false); setIsEditingBlog(false); fetchData();
-    } catch (error) { alert('Lỗi khi lưu Blog'); }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Lỗi khi lưu Blog';
+      showNotification(`Lỗi khi lưu Blog: ${message}`, 'danger');
+      console.error('Lỗi handleSubmitBlog:', error);
+    }
   };
   const handleDeleteBlog = async (id) => {
-    if (window.confirm('Xóa bài viết này?')) { await axios.delete(`http://127.0.0.1:5000/api/blogs/${id}`); fetchData(); }
+    if (window.confirm('Xóa bài viết này?')) {
+      const cfg = getAuthHeaders();
+      if (!cfg) {
+        alert('Bạn chưa đăng nhập hoặc token đã hết hạn!');
+        return;
+      }
+      await axios.delete(`http://127.0.0.1:5000/api/blogs/${id}`, cfg);
+      fetchData();
+    }
   };
 
   const handleDeleteReview = async (id) => {
@@ -183,7 +226,21 @@ function AdminDashboard() {
   };
 
   const handleDeleteTour = async (id) => {
-    if (window.confirm('Xóa tour này?')) { await axios.delete(`http://127.0.0.1:5000/api/tours/${id}`); fetchData(); }
+    if (window.confirm('Xóa tour này?')) {
+      const cfg = getAuthHeaders();
+      if (!cfg) {
+        showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger');
+        return;
+      }
+      try {
+        await axios.delete(`http://127.0.0.1:5000/api/tours/${id}`, cfg);
+        fetchData();
+        showNotification('Xóa tour thành công!', 'success');
+      } catch (error) {
+        const message = error.response?.data?.message || error.message || 'Lỗi xóa tour';
+        showNotification(`Xóa tour lỗi: ${message}`, 'danger');
+      }
+    }
   };
 
   const handleInputChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
@@ -192,10 +249,19 @@ function AdminDashboard() {
   const handleSubmitTour = async (e) => {
     e.preventDefault();
     try {
-      if (isEditing) await axios.put(`http://127.0.0.1:5000/api/tours/${formData._id}`, formData);
-      else await axios.post('http://127.0.0.1:5000/api/tours', formData);
-      resetForm(); fetchData(); alert('Thành công!');
-    } catch (error) { alert('Lỗi khi lưu!'); }
+      const cfg = getAuthHeaders();
+      if (!cfg) {
+        showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger');
+        return;
+      }
+      if (isEditing) await axios.put(`http://127.0.0.1:5000/api/tours/${formData._id}`, formData, cfg);
+      else await axios.post('http://127.0.0.1:5000/api/tours', formData, cfg);
+      resetForm(); fetchData(); showNotification('Lưu tour thành công!', 'success');
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Lỗi khi lưu tour!';
+      showNotification(`Lưu không thành công: ${message}`, 'danger');
+      console.error('Lỗi handleSubmitTour:', error);
+    }
   };
 
   const handleUserInputChange = (e) => setUserFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -217,7 +283,11 @@ function AdminDashboard() {
 
   return (
     <div className="bg-light pb-5" style={{ paddingTop: '90px', minHeight: '100vh', position: 'relative' }}>
-      
+      {notification.visible && (
+        <div className={`position-fixed top-0 end-0 m-3 alert alert-${notification.type} shadow`} style={{ zIndex: 2000, minWidth: '280px' }}>
+          {notification.message}
+        </div>
+      )}
       {/* STYLE CSS ĐÃ CẬP NHẬT ĐỂ TẠO 4 THẺ DOANH THU ĐẸP MẮT */}
       <style>{`
         .rev-card { border-radius: 12px; border: none; padding: 20px; transition: 0.3s; height: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.05); } 
@@ -286,6 +356,57 @@ function AdminDashboard() {
                     {showForm ? 'Đóng form' : '+ Thêm mới'}
                   </button>
                 </div>
+                {showForm && (
+                  <div className="card border-0 shadow-sm p-4 mb-4 rounded-4 border-top border-info border-4">
+                    <h5 className="fw-bold mb-3">{isEditing ? 'Cập nhật Tour' : 'Thêm Tour mới'}</h5>
+                    <form onSubmit={handleSubmitTour}>
+                      <div className="row g-3">
+                        <div className="col-md-6"><label className="small fw-bold">Tên Tour</label><input type="text" className="form-control" name="title" value={formData.title} onChange={handleInputChange} required /></div>
+                        <div className="col-md-6"><label className="small fw-bold">Thành phố</label><input type="text" className="form-control" name="city" value={formData.city} onChange={handleInputChange} required /></div>
+                        <div className="col-md-3"><label className="small fw-bold">Giá (VNĐ)</label><input type="number" className="form-control" name="price" value={formData.price} onChange={handleInputChange} required /></div>
+                        <div className="col-md-3"><label className="small fw-bold">Thời lượng tour</label><input type="text" className="form-control" name="duration" value={formData.duration} onChange={handleInputChange} placeholder="VD: 3 ngày 2 đêm" required /></div>
+                        <div className="col-md-3"><label className="small fw-bold">Ghế trống</label><input type="number" className="form-control" name="availableSeats" value={formData.availableSeats} onChange={handleInputChange} required /></div>
+                        <div className="col-md-3"><label className="small fw-bold">Danh mục</label><select className="form-select" name="category" value={formData.category} onChange={handleInputChange} required><option value="">-- Chọn danh mục --</option>{availableCategories.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}</select></div>
+                        <div className="col-md-6"><label className="small fw-bold">Ngày khởi hành</label><input type="text" className="form-control" name="startDate" value={formData.startDate} onChange={handleInputChange} placeholder="VD: Thứ 7 hàng tuần" required /></div>
+                        <div className="col-md-6"><label className="small fw-bold">Ngày kết thúc</label><input type="text" className="form-control" name="endDate" value={formData.endDate} onChange={handleInputChange} placeholder="VD: Chủ nhật hàng tuần" required /></div>
+                        <div className="col-md-12">
+                          <label className="small fw-bold">Chọn Ảnh</label>
+                          <div className="d-flex gap-2">
+                            <input type="text" className="form-control" name="image" value={formData.image} onChange={handleInputChange} placeholder="VD: tour-1.jpg hoặc /assets/img/index/tour-1.jpg" required />
+                            <button type="button" className="btn btn-outline-info rounded-pill px-3" onClick={() => setShowImagePicker(!showImagePicker)}><i className="bi bi-image"></i> Chọn</button>
+                          </div>
+                          {formData.image && <div className="mt-2"><img src={formData.image.includes('/') ? resolveImageUrl(formData.image) : `/assets/img/index/${formData.image}`} alt="Preview" className="rounded" style={{width:'100px', height:'70px', objectFit:'cover'}} onError={(e) => {e.target.style.display='none'}} /></div>}
+                        </div>
+                        {showImagePicker && (
+                          <div className="col-12 border rounded-3 p-3 bg-light">
+                            <label className="small fw-bold mb-3 d-block">Chọn ảnh từ thư viện (Nhấp để chọn):</label>
+                            <div className="row g-2">
+                              {availableImages.map((img) => (
+                                <div key={img} className="col-md-3 col-sm-4 col-6">
+                                  <div
+                                    className={`position-relative rounded-2 cursor-pointer overflow-hidden ${formData.image === img ? 'border-4 border-success' : 'border-1 border-secondary'}`}
+                                    onClick={() => { setFormData({...formData, image: img}); setShowImagePicker(false); }}
+                                    style={{cursor: 'pointer', aspectRatio: '3/2'}}
+                                  >
+                                    <img src={`/assets/img/index/${img}`} alt={img} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                                    {formData.image === img && <i className="bi bi-check-circle-fill" style={{position:'absolute', bottom:'5px', right:'5px', color:'#10b981', fontSize:'20px', textShadow: '0 0 2px white'}}></i>}
+                                  </div>
+                                  <small className="text-muted text-center d-block text-truncate mt-1">{img}</small>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="col-12"><label className="small fw-bold">Mô tả Tour</label><textarea className="form-control" name="description" rows="4" value={formData.description} onChange={handleInputChange} required></textarea></div>
+                        <div className="col-md-12"><div className="form-check form-switch"><input className="form-check-input" type="checkbox" name="featured" id="tourFeatured" checked={formData.featured} onChange={(e) => setFormData({...formData, featured: e.target.checked})} /><label className="form-check-label fw-bold" htmlFor="tourFeatured">Tour nổi bật</label></div></div>
+                      </div>
+                      <div className="d-flex gap-2 mt-4">
+                        <button type="submit" className="btn btn-info text-white rounded-pill px-5 fw-bold flex-grow-1">{isEditing ? 'Cập nhật' : 'Thêm mới'}</button>
+                        <button type="button" className="btn btn-outline-secondary rounded-pill px-5 fw-bold" onClick={resetForm}>Hủy</button>
+                      </div>
+                    </form>
+                  </div>
+                )}
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
                   <table className="table table-hover align-middle">
                     <thead className="table-light"><tr><th>ẢNH</th><th>TÊN TOUR</th><th>GIÁ</th><th className="text-center">HÀNH ĐỘNG</th></tr></thead>
@@ -322,7 +443,34 @@ function AdminDashboard() {
                       <div className="row g-3">
                         <div className="col-md-8"><label className="small fw-bold">Tiêu đề bài viết</label><input type="text" className="form-control" name="title" value={blogFormData.title} onChange={handleBlogInputChange} required /></div>
                         <div className="col-md-4"><label className="small fw-bold">Danh mục</label><select className="form-select" name="category" value={blogFormData.category} onChange={handleBlogInputChange}><option value="Cẩm Nang Du Lịch">Cẩm Nang Du Lịch</option><option value="Kinh nghiệm">Kinh nghiệm</option><option value="Tin tức">Tin tức</option></select></div>
-                        <div className="col-md-12"><label className="small fw-bold">Link ảnh bìa</label><input type="text" className="form-control" name="image" value={blogFormData.image} onChange={handleBlogInputChange} placeholder="/assets/img/index/ten-anh.jpg" required /></div>
+                        <div className="col-md-12">
+                          <label className="small fw-bold">Chọn Ảnh Bìa</label>
+                          <div className="d-flex gap-2">
+                            <input type="text" className="form-control" name="image" value={blogFormData.image} onChange={handleBlogInputChange} placeholder="/assets/img/index/ten-anh.jpg" required />
+                            <button type="button" className="btn btn-outline-info rounded-pill px-3" onClick={() => setShowImagePicker(!showImagePicker)}><i className="bi bi-image"></i> Chọn</button>
+                          </div>
+                          {blogFormData.image && <div className="mt-2"><img src={blogFormData.image} alt="Preview" className="rounded" style={{width:'100px', height:'70px', objectFit:'cover'}} /></div>}
+                        </div>
+                        {showImagePicker && (
+                          <div className="col-12 border rounded-3 p-3 bg-light">
+                            <label className="small fw-bold mb-3 d-block">Chọn ảnh từ thư viện (Nhấp để chọn):</label>
+                            <div className="row g-2">
+                              {availableImages.map((img) => (
+                                <div key={img} className="col-md-3 col-sm-4 col-6">
+                                  <div
+                                    className={`position-relative rounded-2 cursor-pointer overflow-hidden ${blogFormData.image === `/assets/img/index/${img}` ? 'border-4 border-success' : 'border-1 border-secondary'}`}
+                                    onClick={() => { setBlogFormData({...blogFormData, image: `/assets/img/index/${img}`}); setShowImagePicker(false); }}
+                                    style={{cursor: 'pointer', aspectRatio: '3/2'}}
+                                  >
+                                    <img src={`/assets/img/index/${img}`} alt={img} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                                    {blogFormData.image === `/assets/img/index/${img}` && <i className="bi bi-check-circle-fill" style={{position:'absolute', bottom:'5px', right:'5px', color:'#10b981', fontSize:'20px', textShadow: '0 0 2px white'}}></i>}
+                                  </div>
+                                  <small className="text-muted text-center d-block text-truncate mt-1">{img}</small>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div className="col-12"><label className="small fw-bold">Nội dung bài viết</label><textarea className="form-control" name="content" rows="5" value={blogFormData.content} onChange={handleBlogInputChange} required></textarea></div>
                       </div>
                       <button type="submit" className="btn btn-info text-white w-100 mt-3 rounded-pill fw-bold">ĐĂNG BÀI</button>
