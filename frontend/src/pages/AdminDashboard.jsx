@@ -75,7 +75,6 @@ function AdminDashboard() {
     }
   };
 
-  // --- LOGIC LỌC DỮ LIỆU ---
   const filteredBookings = useMemo(() => {
     const today = new Date();
     return bookings.filter(b => {
@@ -104,20 +103,22 @@ function AdminDashboard() {
     );
   }, [users, searchTerm]);
 
-  // --- FIX: CẬP NHẬT LẠI DOANH THU ĐỂ CÓ FULL 4 THẺ ---
   const revenueData = useMemo(() => {
     const now = new Date();
-    const paidBookings = bookings.filter(b => b.status === 'paid');
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    const paidBookings = (bookings || []).filter(b => b?.status === 'paid');
     
-    // Doanh thu tháng này
-    const monthlyPaid = paidBookings.filter(b => new Date(b.createdAt).getMonth() === now.getMonth() && new Date(b.createdAt).getFullYear() === now.getFullYear());
-    const totalMonth = monthlyPaid.reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0);
+    const monthlyPaid = paidBookings.filter(b => {
+      const d = new Date(b.createdAt);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const totalMonth = monthlyPaid.reduce((sum, b) => sum + (Number(b?.totalPrice) || 0), 0);
 
-    // Doanh thu hôm nay
     const todayPaid = paidBookings.filter(b => new Date(b.createdAt).toDateString() === now.toDateString());
-    const totalToday = todayPaid.reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0);
+    const totalToday = todayPaid.reduce((sum, b) => sum + (Number(b?.totalPrice) || 0), 0);
 
-    // Tour phổ biến nhất
     const tourCounts = {};
     paidBookings.forEach(b => {
       if (b.tourId && b.tourId.title) {
@@ -133,7 +134,6 @@ function AdminDashboard() {
     return { totalMonth, totalToday, successCount: paidBookings.length, popularTour };
   }, [bookings]);
 
-  // Lọc chi tiết danh sách doanh thu
   const filteredRevenueBookings = useMemo(() => {
     let list = bookings.filter(b => b.status === 'paid');
     const today = new Date();
@@ -154,29 +154,77 @@ function AdminDashboard() {
     return { totalRevenue, bookingTotal: bookings.length, tourCount: tours.length, userCount: users.length, blogCount: blogs.length };
   }, [bookings, tours, users, blogs]);
 
-  // --- HÀM XUẤT EXCEL CHO USER ---
-  const exportUsersToCSV = () => {
-    const BOM = "\uFEFF"; // Để Excel đọc không bị lỗi Font Tiếng Việt
-    const headers = ['STT', 'Họ Tên', 'Email', 'Số điện thoại', 'Vai trò'];
-    const csvRows = [headers.join(',')];
-    
-    users.forEach((u, index) => {
-      const row = [ index + 1, `"${u.name}"`, `"${u.email}"`, `"${u.phone || 'N/A'}"`, `"${u.role}"` ];
-      csvRows.push(row.join(','));
-    });
+  // ========================================================
+  // HÀM TRỢ THỦ XUẤT EXCEL CHỐNG LỖI DẤU PHẨY VÀ LỖI FONT
+  // ========================================================
+  const escapeCSV = (str) => {
+    if (str === null || str === undefined) return '""';
+    const escaped = String(str).replace(/"/g, '""');
+    return `"${escaped}"`;
+  };
 
-    const csvContent = BOM + csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const downloadCSV = (csvContent, fileName) => {
+    const BOM = "\uFEFF"; 
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'danh_sach_nguoi_dung.csv');
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // --- CÁC HÀM XỬ LÝ (CRUD) GIỮ NGUYÊN BÊN DƯỚI ---
+  // 1. Xuất Excel: Danh sách Người dùng
+  const exportUsersToCSV = () => {
+    const headers = ['STT', 'Họ Tên', 'Email', 'Số điện thoại', 'Vai trò'];
+    const csvRows = [headers.join(',')];
+    filteredUsers.forEach((u, i) => {
+      const row = [ i + 1, escapeCSV(u.name), escapeCSV(u.email), escapeCSV(u.phone || 'N/A'), escapeCSV(u.role) ];
+      csvRows.push(row.join(','));
+    });
+    downloadCSV(csvRows.join('\n'), 'Danh_Sach_Nguoi_Dung.csv');
+  };
+
+  // 2. Xuất Excel: Danh sách Tour
+  const exportToursToCSV = () => {
+    const headers = ['STT', 'Tên Tour', 'Thành phố', 'Giá (VNĐ)', 'Thời lượng', 'Danh mục', 'Trạng thái'];
+    const csvRows = [headers.join(',')];
+    filteredTours.forEach((t, i) => {
+      const statusStr = t.featured ? 'Nổi bật' : 'Thường';
+      const row = [ i + 1, escapeCSV(t.title), escapeCSV(t.city), escapeCSV(t.price), escapeCSV(t.duration), escapeCSV(t.category), escapeCSV(statusStr) ];
+      csvRows.push(row.join(','));
+    });
+    downloadCSV(csvRows.join('\n'), 'Danh_Sach_Tour.csv');
+  };
+
+  // 3. Xuất Excel: Lịch sử Đơn Hàng
+  const exportBookingsToCSV = () => {
+    const headers = ['STT', 'Mã Đơn', 'Ngày Đặt', 'Khách Hàng', 'SĐT', 'Tên Tour', 'Tổng Tiền (VNĐ)', 'Trạng Thái'];
+    const csvRows = [headers.join(',')];
+    filteredBookings.forEach((b, i) => {
+      const statusStr = b.status === 'paid' ? 'Thành công' : b.status === 'cancelled' ? 'Đã hủy' : 'Chờ duyệt';
+      const userName = b.userId?.name || b.name || 'Khách vãng lai';
+      const userPhone = b.userId?.phone || b.phone || 'N/A';
+      const row = [ i + 1, escapeCSV('#' + b._id.substring(18).toUpperCase()), escapeCSV(new Date(b.createdAt).toLocaleDateString('vi-VN')), escapeCSV(userName), escapeCSV(userPhone), escapeCSV(b.tourId?.title || 'Tour đã xóa'), escapeCSV(b.totalPrice), escapeCSV(statusStr) ];
+      csvRows.push(row.join(','));
+    });
+    downloadCSV(csvRows.join('\n'), 'Lich_Su_Don_Hang.csv');
+  };
+
+  // 4. Xuất Excel: Báo Cáo Doanh Thu
+  const exportRevenueToCSV = () => {
+    const headers = ['STT', 'Mã Đơn', 'Ngày Đặt', 'Khách Hàng', 'Tên Tour', 'Doanh Thu (VNĐ)', 'Trạng Thái'];
+    const csvRows = [headers.join(',')];
+    filteredRevenueBookings.forEach((b, i) => {
+      const userName = b.userId?.name || b.name || 'Khách vãng lai';
+      const row = [ i + 1, escapeCSV('#' + b._id.substring(18).toUpperCase()), escapeCSV(new Date(b.createdAt).toLocaleDateString('vi-VN')), escapeCSV(userName), escapeCSV(b.tourId?.title || 'Tour đã xóa'), escapeCSV(b.totalPrice), escapeCSV('Đã Thanh Toán') ];
+      csvRows.push(row.join(','));
+    });
+    downloadCSV(csvRows.join('\n'), 'Bao_Cao_Doanh_Thu_Chi_Tiet.csv');
+  };
+
+  // --- CÁC HÀM XỬ LÝ API (GIỮ NGUYÊN) ---
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -188,29 +236,18 @@ function AdminDashboard() {
     e.preventDefault();
     try {
       const cfg = getAuthHeaders();
-      if (!cfg) {
-        showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger');
-        return;
-      }
+      if (!cfg) { showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger'); return; }
       if (isEditingBlog) await axios.put(`http://127.0.0.1:5000/api/blogs/${blogFormData._id}`, blogFormData, cfg);
       else await axios.post('http://127.0.0.1:5000/api/blogs', blogFormData, cfg);
       showNotification('Lưu bài viết thành công!', 'success');
       setShowBlogForm(false); setIsEditingBlog(false); fetchData();
-    } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Lỗi khi lưu Blog';
-      showNotification(`Lỗi khi lưu Blog: ${message}`, 'danger');
-      console.error('Lỗi handleSubmitBlog:', error);
-    }
+    } catch (error) { showNotification(`Lỗi khi lưu Blog: ${error.message}`, 'danger'); }
   };
   const handleDeleteBlog = async (id) => {
     if (window.confirm('Xóa bài viết này?')) {
       const cfg = getAuthHeaders();
-      if (!cfg) {
-        alert('Bạn chưa đăng nhập hoặc token đã hết hạn!');
-        return;
-      }
-      await axios.delete(`http://127.0.0.1:5000/api/blogs/${id}`, cfg);
-      fetchData();
+      if (!cfg) return alert('Bạn chưa đăng nhập!');
+      await axios.delete(`http://127.0.0.1:5000/api/blogs/${id}`, cfg); fetchData();
     }
   };
 
@@ -228,18 +265,9 @@ function AdminDashboard() {
   const handleDeleteTour = async (id) => {
     if (window.confirm('Xóa tour này?')) {
       const cfg = getAuthHeaders();
-      if (!cfg) {
-        showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger');
-        return;
-      }
-      try {
-        await axios.delete(`http://127.0.0.1:5000/api/tours/${id}`, cfg);
-        fetchData();
-        showNotification('Xóa tour thành công!', 'success');
-      } catch (error) {
-        const message = error.response?.data?.message || error.message || 'Lỗi xóa tour';
-        showNotification(`Xóa tour lỗi: ${message}`, 'danger');
-      }
+      if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
+      try { await axios.delete(`http://127.0.0.1:5000/api/tours/${id}`, cfg); fetchData(); showNotification('Xóa tour thành công!', 'success'); } 
+      catch (error) { showNotification(`Xóa tour lỗi`, 'danger'); }
     }
   };
 
@@ -250,18 +278,11 @@ function AdminDashboard() {
     e.preventDefault();
     try {
       const cfg = getAuthHeaders();
-      if (!cfg) {
-        showNotification('Bạn chưa đăng nhập hoặc token đã hết hạn!', 'danger');
-        return;
-      }
+      if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
       if (isEditing) await axios.put(`http://127.0.0.1:5000/api/tours/${formData._id}`, formData, cfg);
       else await axios.post('http://127.0.0.1:5000/api/tours', formData, cfg);
       resetForm(); fetchData(); showNotification('Lưu tour thành công!', 'success');
-    } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Lỗi khi lưu tour!';
-      showNotification(`Lưu không thành công: ${message}`, 'danger');
-      console.error('Lỗi handleSubmitTour:', error);
-    }
+    } catch (error) { showNotification(`Lưu không thành công`, 'danger'); }
   };
 
   const handleUserInputChange = (e) => setUserFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -288,7 +309,6 @@ function AdminDashboard() {
           {notification.message}
         </div>
       )}
-      {/* STYLE CSS ĐÃ CẬP NHẬT ĐỂ TẠO 4 THẺ DOANH THU ĐẸP MẮT */}
       <style>{`
         .rev-card { border-radius: 12px; border: none; padding: 20px; transition: 0.3s; height: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.05); } 
         .rev-card-blue { background: #3b82f6; color: white; } 
@@ -304,6 +324,7 @@ function AdminDashboard() {
       <div className="container-fluid px-4 mt-4">
         <div className="row g-4">
           
+          {/* SIDEBAR */}
           <div className="col-12 col-lg-3 col-xl-2">
             <div className="bg-dark text-white rounded-4 shadow-sm overflow-hidden sticky-top" style={{top: '100px'}}>
               <div className="p-4 text-center border-bottom border-secondary">
@@ -351,11 +372,18 @@ function AdminDashboard() {
             {activeTab === 'tours' && (
               <div className="animation-fade-in">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h4 className="fw-bold">Danh sách Tour</h4>
-                  <button className="btn btn-info text-white rounded-pill px-4" onClick={() => setShowForm(!showForm)}>
-                    {showForm ? 'Đóng form' : '+ Thêm mới'}
-                  </button>
+                  <h4 className="fw-bold mb-0">Danh sách Tour</h4>
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-success rounded-pill px-4 shadow-sm" onClick={exportToursToCSV}>
+                      <i className="bi bi-file-earmark-excel me-2"></i>Xuất Excel
+                    </button>
+                    <button className="btn btn-info text-white rounded-pill px-4 shadow-sm" onClick={() => setShowForm(!showForm)}>
+                      {showForm ? 'Đóng form' : '+ Thêm mới'}
+                    </button>
+                  </div>
                 </div>
+                
+                {/* Form Tour */}
                 {showForm && (
                   <div className="card border-0 shadow-sm p-4 mb-4 rounded-4 border-top border-info border-4">
                     <h5 className="fw-bold mb-3">{isEditing ? 'Cập nhật Tour' : 'Thêm Tour mới'}</h5>
@@ -407,8 +435,9 @@ function AdminDashboard() {
                     </form>
                   </div>
                 )}
+
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                  <table className="table table-hover align-middle">
+                  <table className="table table-hover align-middle mb-0">
                     <thead className="table-light"><tr><th>ẢNH</th><th>TÊN TOUR</th><th>GIÁ</th><th className="text-center">HÀNH ĐỘNG</th></tr></thead>
                     <tbody>
                       {filteredTours.map(t => (
@@ -432,7 +461,7 @@ function AdminDashboard() {
             {activeTab === 'blogs' && (
               <div className="animation-fade-in">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h4 className="fw-bold">Quản lý bài viết Blog</h4>
+                  <h4 className="fw-bold mb-0">Quản lý bài viết Blog</h4>
                   <button className="btn btn-info text-white rounded-pill px-4" onClick={() => {setShowBlogForm(!showBlogForm); setIsEditingBlog(false); setBlogFormData({title:'', content:'', image:'', category:'Cẩm Nang Du Lịch', featured:false})}}>
                     {showBlogForm ? 'Đóng' : '+ Viết bài mới'}
                   </button>
@@ -478,7 +507,7 @@ function AdminDashboard() {
                   </div>
                 )}
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                  <table className="table table-hover align-middle">
+                  <table className="table table-hover align-middle mb-0">
                     <thead className="table-light"><tr><th>ẢNH</th><th>TIÊU ĐỀ</th><th>DANH MỤC</th><th>NGÀY ĐĂNG</th><th className="text-center">HÀNH ĐỘNG</th></tr></thead>
                     <tbody>
                       {filteredBlogs.map(b => (
@@ -504,7 +533,7 @@ function AdminDashboard() {
               <div className="animation-fade-in card border-0 shadow-sm rounded-4 p-4">
                 <h4 className="fw-bold mb-4">Quản lý Đánh giá & Bình luận</h4>
                 <div className="table-responsive">
-                  <table className="table table-hover align-middle">
+                  <table className="table table-hover align-middle mb-0">
                     <thead className="table-light"><tr><th>KHÁCH HÀNG</th><th>TOUR/BLOG</th><th>SAO</th><th>NỘI DUNG</th><th>NGÀY</th><th className="text-center">HÀNH ĐỘNG</th></tr></thead>
                     <tbody>
                       {reviews.map(r => (
@@ -528,10 +557,15 @@ function AdminDashboard() {
 
             {/* QUẢN LÝ ĐƠN HÀNG */}
             {activeTab === 'bookings' && (
-              <div className="animation-fade-in card border-0 shadow-sm rounded-4 p-4 overflow-hidden">
-                <h4 className="fw-bold mb-4">Lịch sử đặt tour</h4>
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle small">
+              <div className="animation-fade-in">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h4 className="fw-bold mb-0">Lịch sử đặt tour</h4>
+                  <button className="btn btn-success rounded-pill px-4 shadow-sm" onClick={exportBookingsToCSV}>
+                    <i className="bi bi-file-earmark-excel me-2"></i>Xuất Excel
+                  </button>
+                </div>
+                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                  <table className="table table-hover align-middle small mb-0">
                     <thead className="table-light text-muted"><tr><th>MÃ ĐƠN</th><th>THỜI GIAN</th><th>TOUR</th><th>TIỀN</th><th>TRẠNG THÁI</th><th className="text-center">XỬ LÝ</th></tr></thead>
                     <tbody>
                       {filteredBookings.map(b => (
@@ -540,7 +574,7 @@ function AdminDashboard() {
                           <td><div className="fw-bold">{new Date(b.createdAt).toLocaleDateString('vi-VN')}</div><div className="text-muted" style={{fontSize: '11px'}}>{new Date(b.createdAt).toLocaleTimeString('vi-VN')}</div></td>
                           <td className="text-truncate" style={{maxWidth: '180px'}}>{b.tourId?.title}</td>
                           <td className="fw-bold text-primary">{b.totalPrice?.toLocaleString()}đ</td>
-                          <td><span className={`badge rounded-pill ${b.status === 'paid' ? 'bg-success' : b.status === 'cancelled' ? 'bg-danger' : 'bg-warning text-dark'}`}>{b.status === 'paid' ? 'Thành công' : b.status === 'cancelled' ? 'Đã hủy' : 'Chờ duyệt'}</span></td>
+                          <td><span className={`badge rounded-pill px-3 py-2 ${b.status === 'paid' ? 'bg-success' : b.status === 'cancelled' ? 'bg-danger' : 'bg-warning text-dark'}`}>{b.status === 'paid' ? 'Thành công' : b.status === 'cancelled' ? 'Đã hủy' : 'Chờ duyệt'}</span></td>
                           <td className="text-center">
                             <div className="d-flex justify-content-center gap-1">
                               {b.status !== 'paid' && b.status !== 'cancelled' && (
@@ -560,11 +594,11 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* QUẢN LÝ NGƯỜI DÙNG (THÊM/SỬA/XÓA + XUẤT EXCEL) */}
+            {/* QUẢN LÝ NGƯỜI DÙNG */}
             {activeTab === 'users' && (
               <div className="animation-fade-in">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h4 className="fw-bold">Quản lý Người dùng</h4>
+                  <h4 className="fw-bold mb-0">Quản lý Người dùng</h4>
                   <div className="d-flex gap-2">
                     <button className="btn btn-success rounded-pill px-4 shadow-sm" onClick={exportUsersToCSV}>
                       <i className="bi bi-file-earmark-excel me-2"></i>Xuất Excel
@@ -614,11 +648,10 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* BÁO CÁO DOANH THU (GIAO DIỆN MỚI) */}
+            {/* BÁO CÁO DOANH THU */}
             {activeTab === 'revenue' && (
               <div className="animation-fade-in">
                 
-                {/* Bộ Lọc */}
                 <div className="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-pill shadow-sm">
                   <div className="d-flex align-items-center w-50 px-3 border-end">
                     <i className="bi bi-search text-muted me-2"></i>
@@ -631,9 +664,13 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                <h4 className="fw-bold mb-4 text-dark"><i className="bi bi-graph-up-arrow text-primary me-2"></i>Báo Cáo Doanh Thu</h4>
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h4 className="fw-bold mb-0 text-dark"><i className="bi bi-graph-up-arrow text-primary me-2"></i>Báo Cáo Doanh Thu</h4>
+                  <button className="btn btn-success rounded-pill px-4 shadow-sm" onClick={exportRevenueToCSV}>
+                    <i className="bi bi-file-earmark-excel me-2"></i>Xuất Excel Doanh Thu
+                  </button>
+                </div>
                 
-                {/* 4 Cards Thống kê */}
                 <div className="row g-3 mb-4">
                   <div className="col-md-3">
                     <div className="rev-card rev-card-blue">
@@ -665,7 +702,6 @@ function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Bảng chi tiết doanh thu */}
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
                   <table className="table table-hover align-middle mb-0">
                     <thead className="table-light text-muted small">
