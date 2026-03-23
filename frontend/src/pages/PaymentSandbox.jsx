@@ -98,9 +98,7 @@ function PaymentSandbox() {
         if (formData.paymentMethod === 'cash') {
           alert('🎉 Đặt tour thành công!\nTrạng thái: Chờ xác nhận.\nVui lòng đến văn phòng của chúng tôi để hoàn tất thanh toán nhé.');
         } else {
-          alert('🎉 Đã ghi nhận thông tin thanh toán!\nChúng tôi sẽ kiểm tra đối soát và xác nhận đơn hàng sớm nhất.');
-        }
-        
+          alert("🎉 Đã thanh toán thành công! Cảm ơn bạn đã sử dụng dịch vụ của Du Lịch Việt.");        }     
         // Điều hướng về trang chủ
         navigate('/'); 
       }
