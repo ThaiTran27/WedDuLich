@@ -9,6 +9,17 @@ const removeAccents = (str) => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 };
 
+const slugify = (text) => {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 function TourList() {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +135,7 @@ function TourList() {
                     <h5 className="card-title fw-bold text-dark mb-3" style={{ height: '50px', overflow: 'hidden' }}>{tour.title}</h5>
                     <div className="mt-auto d-flex justify-content-between align-items-center border-top pt-3">
                       <span className="text-danger fw-bold fs-5">{tour.price.toLocaleString('vi-VN')} ₫</span>
-                      <Link to={`/tours/${tour._id}`} className="btn btn-outline-info rounded-pill px-4 fw-bold shadow-sm">
+                      <Link to={`/tours/${slugify(tour.title)}-${tour._id}.html`} className="btn btn-outline-info rounded-pill px-4 fw-bold shadow-sm">
                         Xem chi tiết
                       </Link>
                     </div>

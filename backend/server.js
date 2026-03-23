@@ -10,8 +10,9 @@ const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const reviewRoutes = require('./routes/reviewRoutes'); // <-- THÊM DÒNG NÀY
 const categoryRoutes = require('./routes/categoryRoutes');
+const userRoutes = require('./routes/userRoutes');
 
-dotenv.config();
+dotenv.config({ path: './.env' });
 connectDB();
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/blogs', blogRoutes); // <-- Đã chỉnh lại cho đồng bộ
 app.use('/api/reviews', reviewRoutes); // <-- THÊM DÒNG NÀY ĐỂ CHẠY ĐÁNH GIÁ SAO
 app.use('/api/categories', categoryRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('API Du lịch đang hoạt động!');

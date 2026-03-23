@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+
 function TourDetails() {
-  const { id } = useParams();
+  const { slug, id } = useParams();
   const navigate = useNavigate();
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,12 +19,27 @@ function TourDetails() {
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');
 
+  const resolveId = (slugParam, idParam) => {
+    if (idParam && idParam.match(/^[0-9a-fA-F]{24}$/)) return idParam;
+    if (!slugParam) return null;
+    let cleaned = slugParam.replace(/\.html$/i, '');
+    let parts = cleaned.split('-');
+    let maybeId = parts[parts.length - 1];
+    return maybeId.match(/^[0-9a-fA-F]{24}$/) ? maybeId : null;
+  };
+  const tourId = resolveId(slug, id);
+
   useEffect(() => {
     const fetchData = async () => {
+      if (!tourId) {
+        setLoading(false);
+        setTour(null);
+        return;
+      }
       try {
         const [tourRes, reviewRes] = await Promise.all([
-          axios.get(`http://127.0.0.1:5000/api/tours/${id}`),
-          axios.get(`http://127.0.0.1:5000/api/reviews/${id}`)
+          axios.get(`${API_BASE_URL}/api/tours/${tourId}`),
+          axios.get(`${API_BASE_URL}/api/reviews/${tourId}`)
         ]);
 
         // Xử lý Tour
@@ -38,7 +55,7 @@ function TourDetails() {
       }
     };
     fetchData();
-  }, [id]);
+  }, [tourId]);
 
   // Xử lý khi bấm nút Đặt Tour
   const handleBooking = async () => {
@@ -51,7 +68,7 @@ function TourDetails() {
     const user = JSON.parse(userString);
     setBookingLoading(true);
     try {
-      const res = await axios.post('http://127.0.0.1:5000/api/bookings', {
+      const res = await axios.post(`${API_BASE_URL}/api/bookings`, {
         tourId: tour._id,
         userId: user.id || user._id,
         guestSize: guestSize,
@@ -79,7 +96,7 @@ function TourDetails() {
     const user = JSON.parse(userString);
 
     try {
-      const res = await axios.post(`http://127.0.0.1:5000/api/reviews`, {
+      const res = await axios.post(`${API_BASE_URL}/api/reviews`, {
         tourId: tour._id,
         userId: user.id || user._id,
         rating,
@@ -87,7 +104,7 @@ function TourDetails() {
       });
       alert("Cảm ơn bạn đã đánh giá!");
       // Tải lại danh sách review mới (đã populate name)
-      const newReviewRes = await axios.get(`http://127.0.0.1:5000/api/reviews/${id}`);
+      const newReviewRes = await axios.get(`${API_BASE_URL}/api/reviews/${tourId}`);
       setReviews(newReviewRes.data.data);
       setComment('');
       setRating(5);

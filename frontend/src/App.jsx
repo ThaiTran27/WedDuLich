@@ -45,7 +45,8 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/tours/:id" element={<TourDetails />} />
+              <Route path="/tours/:slug" element={<TourDetails />} />
+              <Route path="/tours/id/:id" element={<TourDetails />} />
               
               {/* DÙNG CHUNG GIAO DIỆN DANH SÁCH TOUR CHO CẢ TRONG NƯỚC VÀ QUỐC TẾ */}
               <Route path="/tour-trong-nuoc" element={<TourList />} />
@@ -55,7 +56,8 @@ function App() {
               
               {/* HỆ THỐNG BLOG ĐÃ FIX ĐƯỜNG DẪN ĐỒNG BỘ backend */}
               <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:id" element={<BlogDetail />} />
+              <Route path="/blog/:slug" element={<BlogDetail />} />
+              <Route path="/blog/id/:id" element={<BlogDetail />} />
               
               <Route path="/lien-he" element={<Contact />} />
               <Route path="/bang-gia" element={<Pricing />} />

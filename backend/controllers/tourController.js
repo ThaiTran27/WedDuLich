@@ -39,14 +39,45 @@ const createTour = async (req, res) => {
   }
 };
 
-// 2. [GET] /api/tours - Lấy danh sách tất cả các tour
+// 2. [GET] /api/tours - Lấy danh sách tất cả các tour (hỗ trợ search/filter qua query params)
 const getAllTours = async (req, res) => {
   try {
-    const tours = await Tour.find(); 
+    const { city, title, category, page = 1, limit = 10 } = req.query;
+    const query = {};
+    
+    // Build search query
+    if (city) query.city = new RegExp(city, "i");
+    if (title) query.title = new RegExp(title, "i");
+    if (category) query.category = new RegExp(category, "i");
+    
+    // Pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
+    const tours = await Tour.find(query).skip(skip).limit(limitNum);
+    const total = await Tour.countDocuments(query);
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}?${new URLSearchParams(req.query).toString()}`,
+      first: `${baseUrl}?page=1&limit=${limitNum}`,
+      last: `${baseUrl}?page=${Math.ceil(total / limitNum)}&limit=${limitNum}`,
+    };
+    
+    if (pageNum > 1) links.prev = `${baseUrl}?page=${pageNum - 1}&limit=${limitNum}`;
+    if (pageNum < Math.ceil(total / limitNum)) links.next = `${baseUrl}?page=${pageNum + 1}&limit=${limitNum}`;
+    
+    res.set('Cache-Control', 'public, max-age=300'); // Cache 5 minutes
     res.status(200).json({ 
       success: true, 
-      count: tours.length, 
-      data: tours 
+      count: tours.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: tours,
+      _links: links
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách tour' });
@@ -60,7 +91,21 @@ const getTourById = async (req, res) => {
     if (!tour) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy tour này' });
     }
-    res.status(200).json({ success: true, data: tour });
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}/${tour._id}`,
+      collection: `${baseUrl}`,
+      bookings: `${req.protocol}://${req.get('host')}/api/bookings?tourId=${tour._id}`
+    };
+    
+    res.set('Cache-Control', 'public, max-age=300'); // Cache 5 minutes
+    res.status(200).json({ 
+      success: true, 
+      data: tour,
+      _links: links
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi server khi lấy chi tiết tour' });
   }
@@ -122,35 +167,11 @@ const deleteTour = async (req, res) => {
   }
 };
 
-// 6. [GET] /api/tours/search/getTourBySearch - Tìm kiếm tour theo tên, thành phố, danh mục
-const getTourBySearch = async (req, res) => {
-  try {
-    const { city, title, category } = req.query;
-    const query = {};
-    
-    if (city) query.city = new RegExp(city, "i");
-    if (title) query.title = new RegExp(title, "i");
-    if (category) query.category = new RegExp(category, "i");
-    
-    const tours = await Tour.find(query);
-    
-    res.status(200).json({
-      success: true,
-      message: tours.length > 0 ? "Tìm thấy kết quả" : "Không tìm thấy tour phù hợp",
-      count: tours.length,
-      data: tours,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Lỗi khi tìm kiếm", error: err.message });
-  }
-};
-
 // Export tất cả các hàm ra
 module.exports = { 
   createTour, 
   getAllTours, 
   getTourById, 
   updateTour, 
-  deleteTour, 
-  getTourBySearch 
+  deleteTour 
 };

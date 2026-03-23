@@ -11,77 +11,163 @@ const createBooking = async (req, res) => {
 
 const getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().populate('userId', 'name email phone').populate('tourId', 'title price');
-    res.status(200).json({ success: true, data: bookings });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách booking' }); }
+    const { code, phone, status, page = 1, limit = 10 } = req.query;
+    let query = {};
+    
+    // Tracking by code or phone
+    if (code || phone) {
+      const queryVal = code || phone;
+      const cleanQuery = queryVal.replace(/#/g, '').replace(/\s+/g, '').toLowerCase();
+      
+      // Find all bookings for tracking
+      const allBookings = await Booking.find()
+        .populate('tourId', 'title image duration price')
+        .populate('userId')
+        .sort({ createdAt: -1 });
+      
+      const filteredBookings = allBookings.filter(b => {
+        const idMatch = String(b._id).toLowerCase().includes(cleanQuery);
+        const bPhone = b.phone ? String(b.phone).replace(/\D/g, '') : '';
+        const uPhone = b.userId?.phone ? String(b.userId.phone).replace(/\D/g, '') : '';
+        const phoneMatch = bPhone.includes(cleanQuery) || uPhone.includes(cleanQuery);
+        return idMatch || phoneMatch;
+      });
+      
+      if (filteredBookings.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: `Không tìm thấy đơn hàng với từ khóa [${cleanQuery}]` 
+        });
+      }
+      
+      // HATEOAS links
+      const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+      const links = {
+        self: `${baseUrl}?${new URLSearchParams(req.query).toString()}`,
+        collection: `${baseUrl}`
+      };
+      
+      res.set('Cache-Control', 'private, max-age=0'); // No cache for tracking
+      return res.status(200).json({ 
+        success: true, 
+        count: filteredBookings.length,
+        data: filteredBookings,
+        _links: links
+      });
+    }
+    
+    // Regular listing with filters
+    if (status) query.status = status;
+    
+    // Pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
+    const bookings = await Booking.find(query)
+      .populate('userId', 'name email phone')
+      .populate('tourId', 'title price')
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+    
+    const total = await Booking.countDocuments(query);
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}?${new URLSearchParams(req.query).toString()}`,
+      first: `${baseUrl}?page=1&limit=${limitNum}`,
+      last: `${baseUrl}?page=${Math.ceil(total / limitNum)}&limit=${limitNum}`,
+    };
+    
+    if (pageNum > 1) links.prev = `${baseUrl}?page=${pageNum - 1}&limit=${limitNum}`;
+    if (pageNum < Math.ceil(total / limitNum)) links.next = `${baseUrl}?page=${pageNum + 1}&limit=${limitNum}`;
+    
+    res.set('Cache-Control', 'private, max-age=60'); // Cache 1 minute for admin
+    res.status(200).json({ 
+      success: true, 
+      count: bookings.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: bookings,
+      _links: links
+    });
+  } catch (error) { 
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách booking' }); 
+  }
 };
 
-const updatePaymentStatus = async (req, res) => {
+const updateBooking = async (req, res) => {
   try {
-    const { paymentMethod } = req.body; 
-    let newStatus = paymentMethod === 'cash' ? 'pending_confirmation' : 'paid'; 
-    const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, { status: newStatus }, { new: true });
-    if (!updatedBooking) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn đặt tour' });
-    res.status(200).json({ success: true, message: 'Cập nhật trạng thái thành công', data: updatedBooking });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi cập nhật trạng thái', error: error.message }); }
+    const { paymentMethod, status } = req.body;
+    
+    let updateData = {};
+    
+    // Handle payment update
+    if (paymentMethod) {
+      updateData.status = paymentMethod === 'cash' ? 'pending_confirmation' : 'paid';
+    }
+    
+    // Handle status update
+    if (status) {
+      updateData.status = status;
+    }
+    
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      req.params.id, 
+      updateData, 
+      { new: true }
+    );
+    
+    if (!updatedBooking) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn đặt tour' });
+    }
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}/${updatedBooking._id}`,
+      collection: `${baseUrl}`,
+      tour: `${req.protocol}://${req.get('host')}/api/tours/${updatedBooking.tourId}`
+    };
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Cập nhật thành công', 
+      data: updatedBooking,
+      _links: links
+    });
+  } catch (error) { 
+    res.status(500).json({ success: false, message: 'Lỗi cập nhật', error: error.message }); 
+  }
 };
 
 const getUserBookings = async (req, res) => {
   try {
     const { userId } = req.params;
-    const bookings = await Booking.find({ userId }).populate('tourId', 'title image price duration').sort({ createdAt: -1 }); 
-    res.status(200).json({ success: true, data: bookings });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi khi lấy lịch sử đặt tour' }); }
-};
-
-// --- MÁY QUÉT LƯỚI TÌM KIẾM BẤT CHẤP LỖI GÕ ---
-const trackOrder = async (req, res) => {
-  try {
-    const queryVal = req.query.code || req.query.phone || "";
-    if (!queryVal) return res.status(400).json({ success: false, message: 'Vui lòng cung cấp thông tin tra cứu.' });
-
-    // Tự động làm sạch mọi dấu hiệu lạ (xoá #, xóa khoảng trắng, in thường)
-    const cleanQuery = queryVal.replace(/#/g, '').replace(/\s+/g, '').toLowerCase();
-
-    // Móc toàn bộ Data từ DB lên quét (Để đảm bảo 100% không sót)
-    const allBookings = await Booking.find()
-      .populate('tourId', 'title image duration price')
-      .populate('userId')
-      .sort({ createdAt: -1 });
-
-    const bookings = allBookings.filter(b => {
-      // Quét Mã Đơn: Chuyển ID sang chữ thường và tìm xem có chứa "a93a19" không
-      const idMatch = String(b._id).toLowerCase().includes(cleanQuery);
-      
-      // Quét SĐT: Vứt hết dấu, chỉ giữ các con số để so sánh cho chắc chắn
-      const bPhone = b.phone ? String(b.phone).replace(/\D/g, '') : '';
-      const uPhone = b.userId?.phone ? String(b.userId.phone).replace(/\D/g, '') : '';
-      const phoneMatch = bPhone.includes(cleanQuery) || uPhone.includes(cleanQuery);
-
-      return idMatch || phoneMatch;
+    const bookings = await Booking.find({ userId })
+      .populate('tourId', 'title image price duration')
+      .sort({ createdAt: -1 }); 
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}/user/${userId}`,
+      collection: `${baseUrl}`,
+      user: `${req.protocol}://${req.get('host')}/api/users/${userId}`
+    };
+    
+    res.set('Cache-Control', 'private, max-age=60'); // Cache 1 minute
+    res.status(200).json({ 
+      success: true, 
+      data: bookings,
+      _links: links
     });
-
-    if (bookings.length === 0) {
-      // DÒNG NÀY ĐỂ BÁO CÁO MẬT: Nó sẽ hiện lên khung đỏ bên giao diện cho biết máy chủ tìm cái gì
-      return res.status(404).json({ 
-        success: false, 
-        message: `Rất tiếc! Hệ thống đã quét ${allBookings.length} đơn hàng với từ khóa [${cleanQuery}] nhưng không khớp.` 
-      });
-    }
-
-    res.status(200).json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi server: ' + error.message });
+  } catch (error) { 
+    res.status(500).json({ success: false, message: 'Lỗi khi lấy lịch sử đặt tour' }); 
   }
 };
 
-const updateBookingStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, { status: status }, { new: true });
-    if (!updatedBooking) return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
-    res.status(200).json({ success: true, message: 'Cập nhật trạng thái thành công', data: updatedBooking });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi server', error: error.message }); }
-};
-
-module.exports = { createBooking, getAllBookings, updatePaymentStatus, getUserBookings, trackOrder, updateBookingStatus };
+module.exports = { createBooking, getAllBookings, updateBooking, getUserBookings };

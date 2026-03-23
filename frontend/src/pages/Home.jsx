@@ -94,7 +94,7 @@ function Home() {
                     <h5 className="card-title fw-bold text-dark mb-3" style={{ height: '50px', overflow: 'hidden' }}>{tour.title}</h5>
                     <div className="d-flex justify-content-between align-items-center border-top pt-3">
                       <span className="text-danger fw-bold fs-5">{tour.price ? tour.price.toLocaleString('vi-VN') : 'Liên hệ'} ₫</span>
-                      <Link to={`/tours/${tour._id}`} className="btn btn-outline-info rounded-pill px-3 btn-sm fw-bold">Chi tiết</Link>
+                      <Link to={`/tours/${tour.title ? tour.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : ''}-${tour._id}.html`} className="btn btn-outline-info rounded-pill px-3 btn-sm fw-bold">Chi tiết</Link>
                     </div>
                   </div>
                 </div>

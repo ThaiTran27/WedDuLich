@@ -4,10 +4,21 @@ const Category = require('../models/Category');
 const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find().sort({ type: 1, name: 1 });
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}`,
+      domestic: `${baseUrl}/type/domestic`,
+      international: `${baseUrl}/type/international`
+    };
+    
+    res.set('Cache-Control', 'public, max-age=3600'); // Cache 1 hour
     res.status(200).json({
       success: true,
       count: categories.length,
-      data: categories
+      data: categories,
+      _links: links
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh mục', error: error.message });
@@ -19,10 +30,21 @@ const getCategoriesByType = async (req, res) => {
   try {
     const { type } = req.params;
     const categories = await Category.find({ type }).sort({ name: 1 });
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}/type/${type}`,
+      collection: `${baseUrl.replace(`/type/${type}`, '')}`,
+      tours: `${req.protocol}://${req.get('host')}/api/tours?category=${type}`
+    };
+    
+    res.set('Cache-Control', 'public, max-age=3600'); // Cache 1 hour
     res.status(200).json({
       success: true,
       count: categories.length,
-      data: categories
+      data: categories,
+      _links: links
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh mục', error: error.message });

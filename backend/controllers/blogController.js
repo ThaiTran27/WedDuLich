@@ -3,10 +3,40 @@ const Blog = require('../models/Blog');
 // Lấy tất cả bài viết (Đã thêm populate để lấy tên tác giả hiển thị lên UI)
 const getAllBlogs = async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
     const blogs = await Blog.find()
-      .populate('author', 'name email') // <-- Tự động móc nối lấy Tên và Email của Admin
-      .sort({ createdAt: -1 }); // Sắp xếp mới nhất lên đầu
-    res.status(200).json({ success: true, data: blogs });
+      .populate('author', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+    
+    const total = await Blog.countDocuments();
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}?${new URLSearchParams(req.query).toString()}`,
+      first: `${baseUrl}?page=1&limit=${limitNum}`,
+      last: `${baseUrl}?page=${Math.ceil(total / limitNum)}&limit=${limitNum}`,
+    };
+    
+    if (pageNum > 1) links.prev = `${baseUrl}?page=${pageNum - 1}&limit=${limitNum}`;
+    if (pageNum < Math.ceil(total / limitNum)) links.next = `${baseUrl}?page=${pageNum + 1}&limit=${limitNum}`;
+    
+    res.set('Cache-Control', 'public, max-age=300'); // Cache 5 minutes
+    res.status(200).json({ 
+      success: true, 
+      count: blogs.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: blogs,
+      _links: links
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách blog' });
   }
@@ -15,13 +45,33 @@ const getAllBlogs = async (req, res) => {
 // Lấy chi tiết 1 bài viết theo ID (Đã thêm populate)
 const getBlogById = async (req, res) => {
   try {
+    console.log('Getting blog with ID:', req.params.id);
     const blog = await Blog.findById(req.params.id)
-      .populate('author', 'name email'); // <-- Tự động móc nối lấy Tên tác giả
+      .populate('author', 'name email');
+    console.log('Blog found:', !!blog);
+    if (blog) console.log('Blog author:', blog.author);
+    
     if (!blog) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết' });
     }
-    res.status(200).json({ success: true, data: blog });
+    
+    // HATEOAS links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    const links = {
+      self: `${baseUrl}/${blog._id}`,
+      collection: `${baseUrl}`,
+      author: blog.author ? `${req.protocol}://${req.get('host')}/api/users/${blog.author._id}` : null,
+      reviews: `${req.protocol}://${req.get('host')}/api/reviews/blog/${blog._id}`
+    };
+    
+    res.set('Cache-Control', 'public, max-age=300'); // Cache 5 minutes
+    res.status(200).json({ 
+      success: true, 
+      data: blog,
+      _links: links
+    });
   } catch (error) {
+    console.error('Error getting blog:', error);
     res.status(500).json({ success: false, message: 'Lỗi khi lấy chi tiết blog' });
   }
 };

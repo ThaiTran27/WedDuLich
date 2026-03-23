@@ -3,8 +3,21 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+const api = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
+
 function BlogDetail() {
-  const { id } = useParams();
+  const { slug, id } = useParams();
+  const resolveId = (slugParam, idParam) => {
+    if (idParam && idParam.match(/^[0-9a-fA-F]{24}$/)) return idParam;
+    if (!slugParam) return null;
+    let cleaned = slugParam.replace(/\.html$/i, '');
+    const chunks = cleaned.split('-');
+    const maybeId = chunks[chunks.length - 1];
+    return maybeId.match(/^[0-9a-fA-F]{24}$/) ? maybeId : null;
+  };
+  const blogId = resolveId(slug, id);
+
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,15 +27,21 @@ function BlogDetail() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!blogId) {
+        setError('Đường dẫn bài viết không hợp lệ.');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const blogRes = await axios.get(`http://127.0.0.1:5000/api/blogs/${id}`);
+        const blogRes = await api.get(`/api/blogs/${blogId}`);
         const blogData = blogRes.data?.data || blogRes.data;
         
         if (blogData && blogData._id) {
           setBlog(blogData);
           // Gọi API bình luận riêng cho Blog
-          const reviewRes = await axios.get(`http://127.0.0.1:5000/api/reviews/blog/${id}`);
+          const reviewRes = await api.get(`/api/reviews/blog/${blogId}`);
           setReviews(reviewRes.data?.data || []);
         } else {
           setError('Bài viết này không tồn tại.');
@@ -34,7 +53,7 @@ function BlogDetail() {
       }
     };
     fetchData();
-  }, [id]);
+  }, [blogId]);
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
@@ -44,18 +63,19 @@ function BlogDetail() {
     const user = JSON.parse(userString);
     setSubmitting(true);
     try {
-      await axios.post(`http://127.0.0.1:5000/api/reviews`, {
-        blogId: id,
+      await api.post('/api/reviews', {
+        blogId: blogId,
         userId: user.id || user._id,
         comment,
         rating: 5
       });
       setComment('');
       // Refresh danh sách bình luận
-      const updated = await axios.get(`http://127.0.0.1:5000/api/reviews/blog/${id}`);
+      const updated = await api.get(`/api/reviews/blog/${blogId}`);
       setReviews(updated.data.data);
       alert("Đăng bình luận thành công!");
     } catch (err) {
+      console.error('Lỗi bình luận:', err);
       alert("Lỗi khi gửi bình luận. Bạn nhớ restart server backend nhé!");
     } finally {
       setSubmitting(false);

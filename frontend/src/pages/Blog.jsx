@@ -3,6 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { resolveImageUrl } from '../utils/imagePath';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+const api = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
+
 function Blog() {
   const categories = ['Tất cả', 'Cẩm Nang Du Lịch', 'Đặc Sản Miền Tây', 'Địa Điểm Du Lịch', 'Văn Hóa Miền Tây'];
   const [activeCategory, setActiveCategory] = useState('Tất cả');
@@ -13,7 +16,7 @@ function Blog() {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:5000/api/blogs');
+        const res = await api.get('/api/blogs');
         const payload = res.data;
         // Hỗ trợ cả 2 kiểu trả về: { success: true, data: [...] } hoặc [...]
         const data = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
@@ -35,6 +38,18 @@ function Blog() {
       setActiveCategory(location.state.category);
     }
   }, [location.state]);
+
+  const slugify = (text) => {
+    if (!text) return '';
+    return text
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
 
   // 3. Logic lọc bài viết
   const filteredBlogs = activeCategory === 'Tất cả' 
@@ -114,7 +129,7 @@ function Blog() {
                       </p>
                       
                       <div className="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                        <Link to={`/blog/${blog._id}`} className="btn btn-link text-info text-decoration-none fw-bold p-0">
+                        <Link to={`/blog/${slugify(blog.title)}-${blog._id}.html`} className="btn btn-link text-info text-decoration-none fw-bold p-0">
                           Đọc thêm <i className="bi bi-arrow-right-short fs-5"></i>
                         </Link>
                         <small className="text-muted"><i className="bi bi-calendar3 me-1"></i> {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')}</small>

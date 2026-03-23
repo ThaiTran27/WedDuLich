@@ -28,30 +28,4 @@ const login = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: "Lỗi server" }); }
 };
 
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find({}).select('-password');
-    res.status(200).json({ success: true, data: users });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi server' }); }
-};
-
-// --- HÀM MỚI: SỬA USER ---
-const updateUser = async (req, res) => {
-  try {
-    const { name, phone, role } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, { name, phone, role }, { new: true }).select('-password');
-    if (!updatedUser) return res.status(404).json({ success: false, message: 'Không tìm thấy user' });
-    res.status(200).json({ success: true, message: 'Cập nhật thành công', data: updatedUser });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi server' }); }
-};
-
-// --- HÀM MỚI: XÓA USER ---
-const deleteUser = async (req, res) => {
-  try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-    if (!deletedUser) return res.status(404).json({ success: false, message: 'Không tìm thấy user' });
-    res.status(200).json({ success: true, message: 'Xóa user thành công' });
-  } catch (error) { res.status(500).json({ success: false, message: 'Lỗi server' }); }
-};
-
-module.exports = { register, login, getAllUsers, updateUser, deleteUser };
+module.exports = { register, login };
