@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CHIÊU CUỐI: ÉP HIỆN MENU TRÊN MÁY TÍNH */
+@media (min-width: 992px) {
+  #navmenu {
+    display: flex !important; /* Ép buộc dùng Flexbox */
+    flex-basis: auto !important;
+    visibility: visible !important; /* Ép buộc hiển thị */
+    opacity: 1 !important; /* Ép buộc không trong suốt */
+    height: auto !important;
+  }
+  
+  .navbar-toggler {
+    display: none !important; /* Giấu cái nút 3 gạch đi khi ở màn hình lớn */
+  }
+
+  .nav-link {
+    color: white !important; /* Ép chữ phải màu trắng */
+    display: block !important;
+  }
+}
+
+/* Đảm bảo thanh Navbar đủ cao để thấy chữ */
+.navbar {
+  min-height: 80px;
+  z-index: 9999;
+}
