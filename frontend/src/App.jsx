@@ -4,6 +4,9 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer'; 
 import ProtectedRoute from './components/ProtectedRoute'; // Import người gác cổng
 
+// --- THÊM DÒNG NÀY: Import component Chat ---
+import ChatWidget from './components/ChatWidget'; 
+
 // Lazy loading các trang để tối ưu tốc độ
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
@@ -83,6 +86,9 @@ function App() {
 
         {/* CHÂN TRANG */}
         <Footer />
+
+        {/* --- THÊM DÒNG NÀY: BONG BÓNG CHAT HIỂN THỊ TOÀN TRANG --- */}
+        <ChatWidget />
       </div>
     </Router>
   );
