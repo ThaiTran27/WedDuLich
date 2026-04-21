@@ -9,11 +9,12 @@ function TourDetails() {
   const { slug, id } = useParams();
   const navigate = useNavigate();
   const [tour, setTour] = useState(null);
+  const [seatStats, setSeatStats] = useState(null); // <-- ĐÃ THÊM: State lưu tình trạng ghế
   const [loading, setLoading] = useState(true);
   const [guestSize, setGuestSize] = useState(1);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // --- PHẦN MỚI: STATE CHO ĐÁNH GIÁ ---
+  // --- STATE CHO ĐÁNH GIÁ ---
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
@@ -42,9 +43,13 @@ function TourDetails() {
           axios.get(`${API_BASE_URL}/api/reviews/${tourId}`)
         ]);
 
-        // Xử lý Tour
-        if (tourRes.data && tourRes.data.success) setTour(tourRes.data.data);
-        else if (tourRes.data) setTour(tourRes.data);
+        // ĐÃ SỬA: Lấy cả thông tin Tour và Tình trạng ghế từ API mới
+        if (tourRes.data && tourRes.data.success) {
+          setTour(tourRes.data.data);
+          setSeatStats(tourRes.data.seatStats); 
+        } else if (tourRes.data) {
+          setTour(tourRes.data);
+        }
 
         // Xử lý Review
         if (reviewRes.data && reviewRes.data.success) setReviews(reviewRes.data.data);
@@ -84,7 +89,7 @@ function TourDetails() {
     }
   };
 
-  // --- PHẦN MỚI: XỬ LÝ GỬI ĐÁNH GIÁ ---
+  // --- XỬ LÝ GỬI ĐÁNH GIÁ ---
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     const userString = localStorage.getItem('user');
@@ -96,14 +101,13 @@ function TourDetails() {
     const user = JSON.parse(userString);
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/reviews`, {
+      await axios.post(`${API_BASE_URL}/api/reviews`, {
         tourId: tour._id,
         userId: user.id || user._id,
         rating,
         comment
       });
       alert("Cảm ơn bạn đã đánh giá!");
-      // Tải lại danh sách review mới (đã populate name)
       const newReviewRes = await axios.get(`${API_BASE_URL}/api/reviews/${tourId}`);
       setReviews(newReviewRes.data.data);
       setComment('');
@@ -123,7 +127,8 @@ function TourDetails() {
           .sticky-booking { position: sticky; top: 100px; z-index: 10; }
           .tour-image-banner { width: 100%; height: 450px; object-fit: cover; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
           .guest-btn { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #dee2e6; background: white; color: #495057; font-weight: bold; transition: all 0.2s; }
-          .guest-btn:hover { background: #0dcaf0; color: white; border-color: #0dcaf0; }
+          .guest-btn:hover:not(:disabled) { background: #0dcaf0; color: white; border-color: #0dcaf0; }
+          .guest-btn:disabled { opacity: 0.5; cursor: not-allowed; }
           .promo-box { border: 2px dashed #ff6b6b; background-color: #fff5f5; border-radius: 16px; padding: 20px; position: relative; }
           .promo-title { position: absolute; top: -15px; left: 20px; background: #ff6b6b; color: white; padding: 4px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(255,107,107,0.2); }
           .timeline { border-left: 2px dashed #0dcaf0; padding-left: 30px; margin-left: 15px; position: relative; margin-top: 30px; }
@@ -165,7 +170,6 @@ function TourDetails() {
             <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
               <h4 className="fw-bold border-bottom pb-3 mb-4"><i className="bi bi-star-fill text-warning me-2"></i> Đánh giá khách hàng ({reviews.length})</h4>
               
-              {/* Form gửi đánh giá */}
               <div className="bg-light p-4 rounded-4 mb-5">
                 <h6 className="fw-bold mb-3">Chia sẻ trải nghiệm của bạn</h6>
                 <div className="mb-3 fs-3">
@@ -185,7 +189,6 @@ function TourDetails() {
                 </form>
               </div>
 
-              {/* Danh sách review */}
               <div className="review-list">
                 {reviews.map((rev) => (
                   <div key={rev._id} className="d-flex mb-4 pb-4 border-bottom">
@@ -204,12 +207,50 @@ function TourDetails() {
                     </div>
                   </div>
                 ))}
-                {reviews.length === 0 && <p className="text-center text-muted italic">Chưa có bình luận nào. Hãy là người đầu tiên đánh giá!</p>}
+                {reviews.length === 0 && <p className="text-center text-muted fst-italic">Chưa có bình luận nào. Hãy là người đầu tiên đánh giá!</p>}
               </div>
             </div>
           </div>
 
           <div className="col-12 col-lg-4">
+            
+            {/* ĐÃ THÊM: KHỐI THỐNG KÊ TÌNH TRẠNG CHỖ NGỒI */}
+            {seatStats && (
+              <div className="card border-0 shadow-sm rounded-4 mb-4 p-4 bg-white">
+                <h6 className="fw-bold mb-3 border-bottom pb-2">
+                  <i className="bi bi-pie-chart-fill text-info me-2"></i> Tình trạng chỗ ngồi
+                </h6>
+                
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-muted small">Tổng số chỗ:</span>
+                  <span className="fw-bold">{seatStats.total}</span>
+                </div>
+                
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-muted small">Đã thanh toán:</span>
+                  <span className="text-success fw-bold">{seatStats.paid}</span>
+                </div>
+                
+                <div className="d-flex justify-content-between mb-3">
+                  <span className="text-muted small">Đang giữ chỗ (Chờ duyệt):</span>
+                  <span className="text-warning fw-bold">{seatStats.pending}</span>
+                </div>
+
+                <div className="progress mb-3 rounded-pill" style={{ height: '8px' }}>
+                  <div className="progress-bar bg-success" style={{ width: `${(seatStats.paid / seatStats.total) * 100}%` }}></div>
+                  <div className="progress-bar bg-warning" style={{ width: `${(seatStats.pending / seatStats.total) * 100}%` }}></div>
+                </div>
+
+                <div className="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 border">
+                  <span className="fw-bold text-secondary">Chỗ còn trống:</span>
+                  <span className={`fw-bold fs-4 ${seatStats.remaining > 0 ? 'text-primary' : 'text-danger'}`}>
+                    {seatStats.remaining === 0 ? 'ĐÃ HẾT CHỖ' : seatStats.remaining}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* KHỐI ĐẶT TOUR */}
             <div className="card border-0 shadow-lg rounded-4 sticky-booking overflow-hidden">
               <div className="bg-primary p-4 text-center text-white" style={{ background: 'linear-gradient(135deg, #0dcaf0 0%, #087990 100%)' }}>
                 <h5 className="mb-1 opacity-75">GIÁ TRỌN GÓI</h5>
@@ -219,17 +260,22 @@ function TourDetails() {
               <div className="card-body p-4 p-md-5 bg-white">
                 <label className="fw-bold text-dark mb-3">Số lượng hành khách</label>
                 <div className="d-flex align-items-center justify-content-between bg-light rounded-pill p-2 border mb-4">
-                  <button className="guest-btn" onClick={() => setGuestSize(p => p > 1 ? p - 1 : 1)}><i className="bi bi-dash"></i></button>
+                  <button className="guest-btn" onClick={() => setGuestSize(p => p > 1 ? p - 1 : 1)} disabled={seatStats?.remaining === 0}><i className="bi bi-dash"></i></button>
                   <span className="fw-bold fs-5">{guestSize}</span>
-                  <button className="guest-btn" onClick={() => setGuestSize(p => p < 20 ? p + 1 : 20)}><i className="bi bi-plus"></i></button>
+                  {/* Chặn không cho tăng số lượng khách vượt quá số chỗ còn lại */}
+                  <button className="guest-btn" onClick={() => setGuestSize(p => p < (seatStats?.remaining || 20) ? p + 1 : p)} disabled={seatStats?.remaining === 0 || guestSize >= seatStats?.remaining}><i className="bi bi-plus"></i></button>
                 </div>
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <span className="fw-bold text-secondary">Tổng cộng:</span>
                   <span className="fw-bold text-danger fs-3">{(tour.price * guestSize).toLocaleString('vi-VN')} ₫</span>
                 </div>
-                <button onClick={handleBooking} disabled={bookingLoading} className="btn btn-danger w-100 rounded-pill py-3 fw-bold shadow fs-5">
+                <button 
+                  onClick={handleBooking} 
+                  disabled={bookingLoading || seatStats?.remaining === 0} 
+                  className={`btn ${seatStats?.remaining === 0 ? 'btn-secondary' : 'btn-danger'} w-100 rounded-pill py-3 fw-bold shadow fs-5`}
+                >
                   {bookingLoading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-cart-check-fill me-2"></i>}
-                  ĐẶT TOUR NGAY
+                  {seatStats?.remaining === 0 ? 'TẠM HẾT CHỖ' : 'ĐẶT TOUR NGAY'}
                 </button>
               </div>
             </div>

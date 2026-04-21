@@ -82,24 +82,22 @@ function PaymentSandbox() {
     executePaymentAPI();
   };
 
-  // ĐÃ SỬA: Logic gọi API và thông báo điều hướng trang chủ
+  // Logic gọi API và thông báo điều hướng trang chủ
   const executePaymentAPI = async () => {
     setProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Gửi thêm phương thức thanh toán để Backend có thể cập nhật trạng thái "Chờ xác nhận"
       const res = await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}/pay`, {
         paymentMethod: formData.paymentMethod
       });
       
       if (res.data.success) {
-        // Tùy biến thông báo theo phương thức thanh toán
         if (formData.paymentMethod === 'cash') {
           alert('🎉 Đặt tour thành công!\nTrạng thái: Chờ xác nhận.\nVui lòng đến văn phòng của chúng tôi để hoàn tất thanh toán nhé.');
         } else {
-          alert("🎉 Đã thanh toán thành công! Cảm ơn bạn đã sử dụng dịch vụ của Du Lịch Việt.");        }     
-        // Điều hướng về trang chủ
+          alert("🎉 Đã thanh toán thành công! Cảm ơn bạn đã sử dụng dịch vụ của Du Lịch Việt.");        
+        }     
         navigate('/'); 
       }
     } catch (error) {
@@ -107,6 +105,23 @@ function PaymentSandbox() {
       console.error(error);
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // ĐÃ THÊM: Logic Hủy đơn hàng và trả ghế
+  const handleCancelBooking = async () => {
+    if (window.confirm("Bạn có chắc chắn muốn hủy đặt tour? Chỗ đã giữ của bạn sẽ được hoàn trả.")) {
+      setProcessing(true);
+      try {
+        await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}`, { status: 'cancelled' });
+        alert("Đã hủy đơn đặt tour và hoàn trả chỗ thành công!");
+        navigate(-1); // Quay lại trang chi tiết Tour
+      } catch (error) {
+        console.error(error);
+        alert("Có lỗi xảy ra khi hủy đơn!");
+      } finally {
+        setProcessing(false);
+      }
     }
   };
 
@@ -268,6 +283,16 @@ function PaymentSandbox() {
                       {processing ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
                       {processing ? 'ĐANG XỬ LÝ...' : `XÁC NHẬN THANH TOÁN`}
                     </button>
+
+                    {/* ĐÃ THÊM: NÚT HỦY GIAO DỊCH */}
+                    <button 
+                      onClick={handleCancelBooking} 
+                      disabled={processing}
+                      className="btn btn-outline-danger w-100 rounded-pill py-2 mt-3 fw-bold shadow-sm"
+                    >
+                      <i className="bi bi-x-circle me-2"></i> Hủy giao dịch & Trở lại
+                    </button>
+
                   </div>
                 </div>
               ) : (
@@ -312,7 +337,7 @@ function PaymentSandbox() {
                   <p className="text-muted small">Sau khi chuyển khoản thành công, hệ thống sẽ tự động xác nhận đơn hàng của bạn.</p>
 
                   <div className="d-flex gap-2 mt-3">
-                    <button className="btn btn-outline-secondary w-50 fw-bold" onClick={() => setShowQrInfo(false)}>
+                    <button className="btn btn-outline-secondary w-50 fw-bold" onClick={() => setShowQrInfo(false)} disabled={processing}>
                       Quay lại
                     </button>
                     <button className="btn btn-success w-50 fw-bold" onClick={executePaymentAPI} disabled={processing}>
