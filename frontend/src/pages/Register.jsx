@@ -30,7 +30,7 @@ function Register() {
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-         style={{ backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/assets/img/index/Vinh-ha-long.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', paddingTop: '80px' }}>
+         style={{ backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/assets/img/index/Vinh-ha-long.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="col-11 col-sm-8 col-md-6 col-lg-4">
         <div className="card border-0 shadow-lg rounded-4 p-4" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
           <div className="text-center mb-4">

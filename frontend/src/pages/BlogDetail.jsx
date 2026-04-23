@@ -86,7 +86,7 @@ function BlogDetail() {
   if (error || !blog) return <div className="text-center py-5 mt-5"><h2>{error}</h2><Link to="/blog" className="btn btn-info text-white">Quay lại Blog</Link></div>;
 
   return (
-    <div className="bg-white min-vh-100" style={{ paddingTop: '80px' }}>
+    <div className="bg-white min-vh-100">
       <div 
         className="position-relative d-flex align-items-end shadow-sm" 
         style={{ 

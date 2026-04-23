@@ -4,11 +4,12 @@ const cors = require('cors');
 const connectDB = require('./config/db.js');
 const cron = require('node-cron'); 
 const Booking = require('./models/Booking.js'); 
-const Chat = require('./models/Chat.js'); // <-- THÊM DÒNG NÀY: Gọi Model Chat
+const Chat = require('./models/Chat.js'); 
 
-// --- 1. IMPORT THƯ VIỆN HTTP VÀ SOCKET.IO ---
+// --- 1. IMPORT THƯ VIỆN HTTP, SOCKET.IO VÀ AI (MỚI) ---
 const http = require('http');
 const { Server } = require('socket.io');
+const { GoogleGenerativeAI } = require('@google/generative-ai'); 
 
 // Import Routes
 const tourRoutes = require('./routes/tourRoutes');
@@ -18,6 +19,9 @@ const blogRoutes = require('./routes/blogRoutes');
 const reviewRoutes = require('./routes/reviewRoutes'); 
 const categoryRoutes = require('./routes/categoryRoutes');
 const userRoutes = require('./routes/userRoutes');
+
+// 👇 ĐÃ THÊM: Import Route Thanh toán VNPay
+const paymentRoutes = require('./routes/paymentRoutes'); 
 
 dotenv.config({ path: './.env' });
 connectDB();
@@ -46,12 +50,42 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes);
 
+// 👇 ĐÃ THÊM: Khai báo đường dẫn API cho VNPay
+app.use('/api/payment', paymentRoutes);
+
 // =====================================================================
-// 💬 THÊM API LẤY LỊCH SỬ CHAT CHO FRONTEND
+// 🤖 API: TRỢ LÝ AI TƯ VẤN DU LỊCH (GEMINI)
+// =====================================================================
+app.post('/api/chat/ai', async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    // Khởi tạo model AI với API Key từ file .env
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Tạo bối cảnh (Prompt) ép AI đóng vai nhân viên công ty bạn
+    const prompt = `
+      Bạn là trợ lý ảo của công ty "Du Lịch Việt". Tên bạn là "VietBot".
+      Nhiệm vụ của bạn là tư vấn du lịch lịch sự, ngắn gọn (dưới 100 chữ) và thân thiện.
+      Khách hàng vừa hỏi: "${message}"
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+
+    res.status(200).json({ success: true, text: responseText });
+  } catch (error) {
+    console.error("❌ Lỗi AI:", error);
+    res.status(500).json({ success: false, text: "Xin lỗi, tổng đài AI đang bận. Bạn vui lòng chat với nhân viên thật nhé!" });
+  }
+});
+
+// =====================================================================
+// 💬 API LẤY LỊCH SỬ CHAT CHO FRONTEND
 // =====================================================================
 app.get('/api/chat', async (req, res) => {
   try {
-    // Chỉ lấy 50 tin nhắn gần nhất để web chạy nhanh mượt
     const messages = await Chat.find().sort({ createdAt: 1 }).limit(50);
     res.status(200).json({ success: true, data: messages });
   } catch (error) {
@@ -82,23 +116,23 @@ cron.schedule('* * * * *', async () => {
     console.error("❌ Lỗi khi chạy Cron Job hủy đơn:", error);
   }
 });
-// =====================================================================
 
 // =========================================================
-// 💬 BỘ NÃO CỦA CHAT REAL-TIME (ĐÃ NÂNG CẤP LƯU DATABASE)
+// 💬 BỘ NÃO CỦA CHAT REAL-TIME (ĐÃ FIX THÀNH PRIVATE ROOMS)
 // =========================================================
 io.on('connection', (socket) => {
   console.log(`⚡ Một thiết bị vừa kết nối Chat (ID: ${socket.id})`);
 
-  // Lắng nghe sự kiện gửi tin nhắn
+  socket.on('join_room', (roomName) => {
+    socket.join(roomName);
+    console.log(`👤 Thiết bị ${socket.id} đã vào phòng: ${roomName}`);
+  });
+
   socket.on('send_message', async (data) => {
     try {
-      // 1. Lưu tin nhắn vào MongoDB ngay lập tức
       const newMsg = new Chat(data);
       await newMsg.save();
-      
-      // 2. Lưu thành công mới phát lại cho TẤT CẢ mọi người đang online
-      io.emit('receive_message', data); 
+      io.to(data.room).emit('receive_message', data); 
     } catch (error) {
       console.error("❌ Lỗi khi lưu tin nhắn vào DB:", error);
     }
@@ -108,7 +142,6 @@ io.on('connection', (socket) => {
     console.log(`❌ Thiết bị đã ngắt kết nối Chat (ID: ${socket.id})`);
   });
 });
-// =========================================================
 
 app.get('/', (req, res) => {
   res.send('API Du lịch đang hoạt động!');
@@ -116,7 +149,6 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-// --- 3. QUAN TRỌNG: ĐỔI app.listen THÀNH server.listen ---
 server.listen(PORT, () => {
-  console.log(`🚀 Server & Chat Socket.io đang chạy trên cổng ${PORT}...`);
+  console.log(`🚀 Server & AI Bot & Chat Socket.io đang chạy trên cổng ${PORT}...`);
 });

@@ -40,8 +40,7 @@ function OrderTracking() {
     <div className="position-relative min-vh-100 d-flex align-items-center py-5" style={{
         backgroundImage: 'linear-gradient(rgba(240, 248, 255, 0.9), rgba(240, 248, 255, 0.9)), url("https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2000&q=80")',
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        paddingTop: '80px'
+        backgroundPosition: 'center'
     }}>
       <div className="container position-relative z-1" style={{ marginTop: '50px' }}>
         <div className="row justify-content-center">

@@ -1,6 +1,6 @@
 function About() {
   return (
-    <div className="bg-white pt-5 mt-4">
+    <div className="bg-white pt-5">
       {/* SECTION 1: CÂU CHUYỆN THƯƠNG HIỆU */}
       <div className="container py-5">
         <div className="row align-items-center g-5">

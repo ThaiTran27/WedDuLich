@@ -1,6 +1,6 @@
 function Contact() {
   return (
-    <div className="bg-light pb-5" style={{ minHeight: '100vh', paddingTop: '80px' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
       {/* Banner Liên hệ */}
       <div className="bg-dark text-white text-center py-5 mb-5" style={{ background: 'url("https://images.unsplash.com/photo-1596423735880-5ec80c550cc4?auto=format&fit=crop&w=1500&q=80") center/cover', position: 'relative' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }}></div>

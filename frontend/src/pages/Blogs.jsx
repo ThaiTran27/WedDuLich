@@ -29,7 +29,7 @@ function Blogs() {
   );
 
   return (
-    <div className="bg-light min-vh-100" style={{ paddingTop: '100px' }}>
+    <div className="bg-light min-vh-100">
       {/* Banner đầu trang */}
       <div className="container mb-5">
         <div className="p-5 rounded-5 text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #1a73e8 0%, #0dcaf0 100%)' }}>

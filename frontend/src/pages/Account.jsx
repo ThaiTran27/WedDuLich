@@ -48,14 +48,14 @@ function Account() {
   if (!user) return null;
 
   return (
-    <div className="bg-light min-vh-100 py-5 mt-4">
+    <div className="bg-light min-vh-100 py-5">
       <div className="container py-4">
         <h2 className="fw-bold mb-4">Hồ sơ cá nhân</h2>
         
         <div className="row g-4">
           {/* CỘT TRÁI: THÔNG TIN USER */}
           <div className="col-12 col-lg-4">
-            <div className="card border-0 shadow-sm rounded-4 text-center p-4 sticky-top" style={{ top: '100px' }}>
+            <div className="card border-0 shadow-sm rounded-4 text-center p-4 sticky-top" style={{ top: '75px' }}>
               <div className="mb-3">
                 <div className="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center fw-bold display-4 shadow-sm" style={{ width: '100px', height: '100px' }}>
                   {user.name.charAt(0).toUpperCase()}

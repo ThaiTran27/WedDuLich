@@ -118,13 +118,13 @@ function TourDetails() {
   };
 
   if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center bg-light"><div className="spinner-border text-info" style={{ width: '3rem', height: '3rem' }}></div></div>;
-  if (!tour) return <div className="vh-100 d-flex flex-column justify-content-center align-items-center bg-light" style={{ paddingTop: '80px' }}><h2 className="fw-bold text-secondary">Không tìm thấy thông tin Tour</h2><Link to="/tour-trong-nuoc" className="btn btn-info text-white mt-3 rounded-pill px-4">Quay lại danh sách</Link></div>;
+  if (!tour) return <div className="vh-100 d-flex flex-column justify-content-center align-items-center bg-light"><h2 className="fw-bold text-secondary">Không tìm thấy thông tin Tour</h2><Link to="/tour-trong-nuoc" className="btn btn-info text-white mt-3 rounded-pill px-4">Quay lại danh sách</Link></div>;
 
   return (
-    <div className="bg-light pb-5" style={{ paddingTop: '100px', minHeight: '100vh' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
       <style>
         {`
-          .sticky-booking { position: sticky; top: 100px; z-index: 10; }
+          .sticky-booking { position: sticky; top: 5px; z-index: 10; }
           .tour-image-banner { width: 100%; height: 450px; object-fit: cover; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
           .guest-btn { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #dee2e6; background: white; color: #495057; font-weight: bold; transition: all 0.2s; }
           .guest-btn:hover:not(:disabled) { background: #0dcaf0; color: white; border-color: #0dcaf0; }

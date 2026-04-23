@@ -14,7 +14,7 @@ function PaymentSandbox() {
   const [showQrInfo, setShowQrInfo] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', notes: '', paymentRate: '100', paymentMethod: 'bank',
+    name: '', phone: '', email: '', notes: '', paymentRate: '100', paymentMethod: 'vnpay', // Đổi mặc định sang vnpay
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -72,17 +72,37 @@ function PaymentSandbox() {
       return;
     }
 
+    // --- 1. XỬ LÝ THANH TOÁN VNPAY ---
+    if (formData.paymentMethod === 'vnpay') {
+      setProcessing(true);
+      try {
+        const res = await axios.post('http://127.0.0.1:5000/api/payment/create_payment_url', {
+          bookingId: booking._id,
+          amount: booking.totalPrice,
+          bankCode: 'NCB' // Bật sẵn ngân hàng test
+        });
+        if (res.data.success) {
+          window.location.href = res.data.paymentUrl; // Chuyển hướng sang VNPay
+        }
+      } catch (error) {
+        alert("Lỗi kết nối cổng thanh toán VNPAY!");
+        setProcessing(false);
+      }
+      return;
+    }
+
+    // --- 2. XỬ LÝ CHUYỂN KHOẢN VIETQR ---
     if (formData.paymentMethod === 'bank') {
       setShowQrInfo(true);
       window.scrollTo(0, 0); 
       return;
     }
 
-    // Nếu thanh toán tiền mặt -> Gọi API thực thi luôn
+    // --- 3. XỬ LÝ TIỀN MẶT ---
     executePaymentAPI();
   };
 
-  // Logic gọi API và thông báo điều hướng trang chủ
+  // Logic gọi API lưu trạng thái nội bộ (Cho Tiền mặt và VietQR)
   const executePaymentAPI = async () => {
     setProcessing(true);
     try {
@@ -97,7 +117,7 @@ function PaymentSandbox() {
           alert('🎉 Đặt tour thành công!\nTrạng thái: Chờ xác nhận.\nVui lòng đến văn phòng của chúng tôi để hoàn tất thanh toán nhé.');
         } else {
           alert("🎉 Đã thanh toán thành công! Cảm ơn bạn đã sử dụng dịch vụ của Du Lịch Việt.");        
-        }     
+        }    
         navigate('/'); 
       }
     } catch (error) {
@@ -108,14 +128,13 @@ function PaymentSandbox() {
     }
   };
 
-  // ĐÃ THÊM: Logic Hủy đơn hàng và trả ghế
   const handleCancelBooking = async () => {
     if (window.confirm("Bạn có chắc chắn muốn hủy đặt tour? Chỗ đã giữ của bạn sẽ được hoàn trả.")) {
       setProcessing(true);
       try {
         await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}`, { status: 'cancelled' });
         alert("Đã hủy đơn đặt tour và hoàn trả chỗ thành công!");
-        navigate(-1); // Quay lại trang chi tiết Tour
+        navigate(-1); 
       } catch (error) {
         console.error(error);
         alert("Có lỗi xảy ra khi hủy đơn!");
@@ -134,11 +153,8 @@ function PaymentSandbox() {
   const beneficiaryName = 'CONG TY TNHH DU LICH VIET';
   const orderContent = `DLV ${booking._id.substring(0,6).toUpperCase()}`;
 
-  const deeplinkUrl = `https://dl.vietqr.io/pay?ba=${encodeURIComponent(beneficiaryAccount + '@' + beneficiaryBankCode)}&am=${totalPrice}&bn=${encodeURIComponent(beneficiaryName)}&tn=${encodeURIComponent(orderContent)}&url=${encodeURIComponent(window.location.href)}`;
-  const maybeVietqrScheme = `vietqr://pay?ba=${encodeURIComponent(beneficiaryAccount + '@' + beneficiaryBankCode)}&am=${totalPrice}&bn=${encodeURIComponent(beneficiaryName)}&tn=${encodeURIComponent(orderContent)}&url=${encodeURIComponent(window.location.href)}`;
-
   return (
-    <div className="bg-light pb-5" style={{ paddingTop: '90px', minHeight: '100vh' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
       <style>
         {`
           .step-container { position: relative; display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto; }
@@ -158,7 +174,7 @@ function PaymentSandbox() {
           .radio-box.active { border-color: #fd7e14; background: #fff5eb; box-shadow: 0 0 0 1px #fd7e14; }
           .radio-box input[type="radio"] { margin-top: 4px; accent-color: #fd7e14; }
           
-          .sticky-summary { position: sticky; top: 100px; }
+          .sticky-summary { position: sticky; top: 75px; }
         `}
       </style>
 
@@ -233,17 +249,43 @@ function PaymentSandbox() {
             <div className="payment-card">
               <div className="payment-card-header bg-white"><div style={{width:'8px', height:'8px', background:'#fd7e14', borderRadius:'50%'}}></div> Chọn phương thức thanh toán</div>
               <div className="payment-card-body">
+                
+                {/* --- LỰA CHỌN VNPAY --- */}
+                <label className={`radio-box w-100 ${formData.paymentMethod === 'vnpay' ? 'active' : ''}`}>
+                  <input type="radio" name="paymentMethod" value="vnpay" checked={formData.paymentMethod === 'vnpay'} onChange={handleInputChange} />
+                  <div className="flex-grow-1">
+                    <div className="fw-bold text-primary mb-1 d-flex align-items-center">
+                      <img 
+                        src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" 
+                        style={{ height: '18px', width: 'auto', objectFit: 'contain' }} 
+                        className="me-2" 
+                        alt="VNPay"
+                        onError={(e) => { 
+                          e.target.style.display = 'none'; 
+                          e.target.nextSibling.style.display = 'inline-block'; 
+                        }} 
+                      />
+                      <i className="bi bi-credit-card-fill text-primary me-2" style={{ display: 'none', fontSize: '18px' }}></i>
+                      Thanh toán qua VNPAY
+                    </div>
+                    <small className="text-muted">Hỗ trợ thẻ ATM, Visa, MasterCard và ứng dụng ngân hàng.</small>
+                  </div>
+                </label>
+
+                {/* LỰA CHỌN CHUYỂN KHOẢN (QR) */}
                 <label className={`radio-box w-100 ${formData.paymentMethod === 'bank' ? 'active' : ''}`}>
                   <input type="radio" name="paymentMethod" value="bank" checked={formData.paymentMethod === 'bank'} onChange={handleInputChange} />
                   <div className="flex-grow-1">
-                    <div className="fw-bold text-primary mb-1"><i className="bi bi-bank me-2"></i>Chuyển khoản ngân hàng</div>
-                    <small className="text-muted">Giữ chỗ tức thì, xác nhận sau khi nhận được chuyển khoản.</small>
+                    <div className="fw-bold text-dark mb-1"><i className="bi bi-bank me-2 text-info"></i>Chuyển khoản thủ công (VietQR)</div>
+                    <small className="text-muted">Quét mã QR để chuyển khoản. Xác nhận sau 5-10 phút.</small>
                   </div>
                 </label>
+
+                {/* LỰA CHỌN TIỀN MẶT */}
                 <label className={`radio-box w-100 mb-0 ${formData.paymentMethod === 'cash' ? 'active' : ''}`}>
                   <input type="radio" name="paymentMethod" value="cash" checked={formData.paymentMethod === 'cash'} onChange={handleInputChange} />
                   <div>
-                    <div className="fw-bold text-dark mb-1"><i className="bi bi-cash-stack me-2"></i>Thanh toán tiền mặt tại văn phòng</div>
+                    <div className="fw-bold text-dark mb-1"><i className="bi bi-cash-stack me-2 text-success"></i>Thanh toán tiền mặt tại văn phòng</div>
                     <small className="text-muted">12 Nguyễn Văn Bảo, Phường 4, Gò Vấp, TP. HCM.</small>
                   </div>
                 </label>
@@ -284,7 +326,6 @@ function PaymentSandbox() {
                       {processing ? 'ĐANG XỬ LÝ...' : `XÁC NHẬN THANH TOÁN`}
                     </button>
 
-                    {/* ĐÃ THÊM: NÚT HỦY GIAO DỊCH */}
                     <button 
                       onClick={handleCancelBooking} 
                       disabled={processing}

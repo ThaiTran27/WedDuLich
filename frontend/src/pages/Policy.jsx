@@ -22,7 +22,7 @@ function Policy() {
   ];
 
   return (
-    <div className="bg-light pb-5" style={{ minHeight: '100vh', paddingTop: '80px' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
       
       {/* Banner nhỏ */}
       <div className="bg-info text-white text-center py-5 mb-5 shadow-sm" style={{ background: 'linear-gradient(135deg, #0dcaf0 0%, #087990 100%)' }}>
@@ -35,7 +35,7 @@ function Policy() {
           
           {/* CỘT TRÁI: MENU TABS */}
           <div className="col-lg-3">
-            <div className="card border-0 shadow-sm rounded-4 p-3 sticky-top" style={{ top: '100px' }}>
+            <div className="card border-0 shadow-sm rounded-4 p-3 sticky-top" style={{ top: '75px' }}>
               <div className="list-group list-group-flush gap-2">
                 {tabs.map((tab) => (
                   <button

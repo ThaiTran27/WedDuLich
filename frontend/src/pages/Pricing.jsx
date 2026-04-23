@@ -1,6 +1,6 @@
 function Pricing() {
   return (
-    <div className="bg-light pb-5" style={{ minHeight: '100vh', paddingTop: '80px' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
       <div className="container mt-5">
         <div className="text-center mb-5">
           <h6 className="text-info fw-bold">DỊCH VỤ ĐI KÈM</h6>

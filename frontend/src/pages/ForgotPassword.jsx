@@ -17,7 +17,7 @@ function ForgotPassword() {
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-         style={{ backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/assets/img/index/Vinh-ha-long.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', paddingTop: '80px' }}>
+         style={{ backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("/assets/img/index/Vinh-ha-long.jpg")', backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-12 col-md-8 col-lg-5">

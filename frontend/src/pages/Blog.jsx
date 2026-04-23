@@ -57,7 +57,7 @@ function Blog() {
     : blogs.filter(blog => (blog.category || '') === activeCategory);
 
   return (
-    <div className="bg-light pb-5" style={{ minHeight: '100vh', paddingTop: '70px' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
       
       {/* ĐÃ FIX BANNER: Tách rõ các thuộc tính CSS để không bị lỗi nền xám */}
       <div className="position-relative d-flex align-items-center" style={{ 

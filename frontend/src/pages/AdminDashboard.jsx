@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'; // ĐÃ THÊM: Thư viện vẽ biểu đồ
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -289,6 +290,16 @@ function AdminDashboard() {
     return { totalRevenue, bookingTotal: bookings.length, tourCount: tours.length, userCount: users.length, blogCount: blogs.length };
   }, [bookings, tours, users, blogs]);
 
+  // ĐÃ THÊM: Dữ liệu tính toán cho Biểu đồ Recharts
+  const pieData = useMemo(() => {
+    return [
+      { name: 'Đã thanh toán', value: bookings.filter(b => b.status === 'paid').length },
+      { name: 'Chờ xử lý', value: bookings.filter(b => b.status === 'pending' || b.status === 'pending_confirmation').length },
+      { name: 'Đã hủy', value: bookings.filter(b => b.status === 'cancelled').length },
+    ];
+  }, [bookings]);
+  const COLORS = ['#198754', '#ffc107', '#dc3545']; // Xanh (Thành công), Vàng (Chờ), Đỏ (Hủy)
+
   const selectedBookingStats = useMemo(() => {
     if (!selectedBooking || !selectedBooking.tourId?._id) return null;
     const tourId = String(selectedBooking.tourId._id);
@@ -456,7 +467,7 @@ function AdminDashboard() {
   if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center"><div className="spinner-border text-info"></div></div>;
 
   return (
-    <div className="bg-light pb-5" style={{ paddingTop: '90px', minHeight: '100vh', position: 'relative' }}>
+    <div className="bg-light pb-5" style={{ minHeight: '100vh', position: 'relative' }}>
       {notification.visible && (
         <div className={`position-fixed top-0 end-0 m-3 alert alert-${notification.type} shadow`} style={{ zIndex: 2000, minWidth: '280px' }}>
           {notification.message}
@@ -472,7 +483,7 @@ function AdminDashboard() {
           
           {/* ===================== SIDEBAR ===================== */}
           <div className="col-12 col-lg-3 col-xl-2">
-            <div className="bg-dark text-white rounded-4 shadow-sm overflow-hidden sticky-top" style={{top: '100px'}}>
+            <div className="bg-dark text-white rounded-4 shadow-sm overflow-hidden sticky-top" style={{top: '75px'}}>
               <div className="p-4 text-center border-bottom border-secondary">
                 <div className={`rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 ${userRole === 'admin' ? 'bg-danger' : 'bg-info'}`} style={{width:'50px', height:'50px'}}>
                   <i className={`bi fs-3 text-white ${userRole === 'admin' ? 'bi-shield-lock-fill' : 'bi-person-badge'}`}></i>
@@ -509,6 +520,38 @@ function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+
+                {/* ĐÃ THÊM: Biểu đồ Recharts và Phân tích */}
+                <div className="row mt-5">
+                  <div className="col-md-6 mb-4">
+                    <div className="card border-0 shadow-sm rounded-4 h-100 p-4">
+                      <h5 className="fw-bold text-secondary mb-4">Tỷ lệ Trạng thái Đơn hàng</h5>
+                      <div style={{ height: '300px' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                              {pieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6 mb-4">
+                    <div className="card border-0 shadow-sm rounded-4 h-100 p-4 bg-info text-white">
+                      <h5 className="fw-bold mb-4"><i className="bi bi-lightbulb-fill text-warning me-2"></i>Phân tích hệ thống</h5>
+                      <p>Hiện tại hệ thống đang có <strong>{tours.length}</strong> tour đang mở bán.</p>
+                      <p>Tỷ lệ đơn hàng thanh toán thành công đạt <strong>{bookings.length > 0 ? Math.round((pieData[0].value / bookings.length) * 100) : 0}%</strong>.</p>
+                      <p>Hệ thống tự động hủy đơn (Cron Job) hoạt động ổn định giúp giải phóng các ghế giữ chỗ quá thời gian quy định.</p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             )}
 

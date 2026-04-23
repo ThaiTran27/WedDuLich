@@ -2,28 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CHIÊU CUỐI: ÉP HIỆN MENU TRÊN MÁY TÍNH */
-@media (min-width: 992px) {
-  #navmenu {
-    display: flex !important; /* Ép buộc dùng Flexbox */
-    flex-basis: auto !important;
-    visibility: visible !important; /* Ép buộc hiển thị */
-    opacity: 1 !important; /* Ép buộc không trong suốt */
-    height: auto !important;
-  }
-  
-  .navbar-toggler {
-    display: none !important; /* Giấu cái nút 3 gạch đi khi ở màn hình lớn */
-  }
+/* ========================================================
+   1. ĐẨY NỘI DUNG XUỐNG ĐỂ KHÔNG BỊ NAVBAR ĐÈ (CHUẨN NHẤT)
+   ======================================================== */
+body {
+  padding-top: 85px; 
+}
 
-  .nav-link {
-    color: white !important; /* Ép chữ phải màu trắng */
-    display: block !important;
+@media (max-width: 991px) {
+  body {
+    padding-top: 75px; 
   }
 }
 
-/* Đảm bảo thanh Navbar đủ cao để thấy chữ */
+/* ========================================================
+   2. FIX LỖI TAILWIND ĐÁ BOOTSTRAP (ÉP HIỆN MENU DESKTOP)
+   ======================================================== */
+@media (min-width: 992px) {
+  .navbar-expand-lg .navbar-collapse {
+    display: flex !important; /* Bắt buộc dàn hàng ngang trên máy tính */
+    flex-basis: auto;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .navbar-toggler {
+    display: none !important; /* Giấu nút 3 gạch trên máy tính */
+  }
+
+  .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important; /* Chữ trắng mờ nhẹ cho sang */
+    display: block;
+  }
+  
+  .nav-link:hover, .nav-link.active {
+    color: #0dcaf0 !important; /* Di chuột vào sáng màu xanh lên */
+    opacity: 1;
+  }
+}
+
+/* ========================================================
+   3. TINH CHỈNH KÍCH THƯỚC NAVBAR
+   ======================================================== */
 .navbar {
-  min-height: 80px;
-  z-index: 9999;
+  min-height: 70px;
+  z-index: 1040 !important; /* Mức z-index an toàn để luôn nổi lên trên cùng */
+  transition: all 0.3s ease;
+}
+
+.navbar-brand {
+  font-size: 1.8rem !important;
+  margin-right: 2rem;
+}
+
+.nav-link {
+  font-size: 0.95rem !important;
+  margin: 0 0.2rem;
 }

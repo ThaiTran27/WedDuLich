@@ -24,6 +24,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Policy = lazy(() => import('./pages/Policy'));
 const OrderTracking = lazy(() => import('./pages/OrderTracking'));
+const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 
 function App() {
   return (
@@ -70,7 +71,7 @@ function App() {
               {/* --- CÁC TRANG CẦN ĐĂNG NHẬP THƯỜNG --- */}
               <Route path="/tai-khoan" element={<Account />} />
               <Route path="/payment/:bookingId" element={<PaymentSandbox />} />
-              
+              <Route path="/payment-result" element={<PaymentResult />} />
               {/* --- TRANG QUẢN TRỊ (CHỈ ADMIN MỚI VÀO ĐƯỢC) --- */}
               <Route 
                 path="/admin" 

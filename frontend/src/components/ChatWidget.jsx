@@ -1,21 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Bắt buộc phải có để gọi API AI
 import io from 'socket.io-client';
-// Đã bỏ thư viện axios vì không cần tải lại lịch sử nữa
 
 const socket = io('http://127.0.0.1:5000', { autoConnect: false });
 
 function ChatWidget() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [chatMode, setChatMode] = useState('menu'); 
   
+  // chatMode có 3 trạng thái: 'menu', 'live' (nhân viên), 'ai' (bot)
+  const [chatMode, setChatMode] = useState('menu'); 
   const [message, setMessage] = useState('');
-  const [chatLog, setChatLog] = useState([]); // Khởi tạo mảng rỗng, không tải từ DB lên nữa
+  const [chatLog, setChatLog] = useState([]); 
   const messagesEndRef = useRef(null);
 
   const [currentUser, setCurrentUser] = useState('');
   const [currentUserRole, setCurrentUserRole] = useState('user');
+  const [isBotTyping, setIsBotTyping] = useState(false); // Trạng thái AI đang suy nghĩ
 
   // Lấy thông tin User hoặc tạo Khách ảo
   useEffect(() => {
@@ -35,38 +37,87 @@ function ChatWidget() {
     }
   }, []);
 
-  // --- ĐÃ SỬA: Xóa phần gọi API fetchChatHistory ---
-  // Giờ chỉ còn lắng nghe tin nhắn mới (Real-time)
+  // Lắng nghe tin nhắn từ nhân viên (Chỉ chạy khi ở chế độ 'live')
   useEffect(() => {
-    socket.on('receive_message', (data) => {
-      setChatLog((prev) => [...prev, data]);
-    });
-    return () => socket.off('receive_message'); 
-  }, []);
+    const handleReceive = (data) => {
+      if (chatMode === 'live') {
+        setChatLog((prev) => [...prev, data]);
+      }
+    };
+    socket.on('receive_message', handleReceive);
+    return () => socket.off('receive_message', handleReceive); 
+  }, [chatMode]);
 
   // Cuộn xuống tin nhắn cuối cùng
   useEffect(() => {
-    if (chatMode === 'live') {
+    if (chatMode === 'live' || chatMode === 'ai') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatLog, isOpen, chatMode]);
+  }, [chatLog, isOpen, chatMode, isBotTyping]);
 
+  // --- CHẾ ĐỘ CHAT VỚI NHÂN VIÊN ---
   const startLiveChat = () => {
     socket.connect(); 
+    socket.emit('join_room', "Support_Room"); // Gắn cố định phòng Support_Room để Admin thấy
+    setChatLog([{ 
+      sender: 'Hệ thống', 
+      text: 'Đang kết nối với nhân viên, bạn vui lòng đợi nhé...', 
+      role: 'system', 
+      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) 
+    }]);
     setChatMode('live');
   };
 
-  const handleSend = (e) => {
+  // --- CHẾ ĐỘ CHAT VỚI AI ---
+  const startAiChat = () => {
+    setChatLog([{ 
+      sender: '🤖 VietBot', 
+      text: `Chào ${currentUser.split(' ').pop()}! Mình là Trợ lý AI của Du Lịch Việt. Mình có thể giúp gì cho bạn hôm nay?`, 
+      role: 'bot', 
+      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) 
+    }]);
+    setChatMode('ai');
+  };
+
+  const handleSend = async (e) => {
     e.preventDefault();
     if (message.trim() !== '') {
-      const msgData = {
-        sender: currentUser,
-        text: message,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        role: currentUserRole
-      };
-      socket.emit('send_message', msgData);
+      const msgText = message;
       setMessage('');
+      
+      const currentTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const userMsg = { sender: currentUser, text: msgText, time: currentTime, role: currentUserRole };
+
+      // 1. Hiển thị ngay tin nhắn của người dùng lên màn hình
+      setChatLog((prev) => [...prev, userMsg]);
+
+      // 2. Rẽ nhánh xử lý dựa theo Mode
+      if (chatMode === 'live') {
+        // --- Gửi qua Socket cho nhân viên ---
+        socket.emit('send_message', { ...userMsg, room: "Support_Room" });
+      } else if (chatMode === 'ai') {
+        // --- Gửi qua API cho Gemini AI ---
+        setIsBotTyping(true);
+        try {
+          const res = await axios.post('http://127.0.0.1:5000/api/chat/ai', { message: msgText });
+          const botMsg = { 
+            sender: '🤖 VietBot', 
+            text: res.data.text, 
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
+            role: 'bot' 
+          };
+          setChatLog((prev) => [...prev, botMsg]);
+        } catch (error) {
+          setChatLog((prev) => [...prev, { 
+            sender: '🤖 VietBot', 
+            text: 'Xin lỗi, hệ thống AI đang quá tải. Bạn vui lòng thử lại sau hoặc chat với nhân viên nhé!', 
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
+            role: 'bot' 
+          }]);
+        } finally {
+          setIsBotTyping(false);
+        }
+      }
     }
   };
 
@@ -90,81 +141,98 @@ function ChatWidget() {
       {isOpen && (
         <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '350px', height: '480px', display: 'flex', flexDirection: 'column' }}>
           
+          {/* HEADER CHAT */}
           <div className="bg-info text-white p-3 d-flex justify-content-between align-items-center shadow-sm z-1">
             <div className="d-flex align-items-center">
-              {chatMode === 'live' && (
+              {(chatMode === 'live' || chatMode === 'ai') && (
                 <button onClick={() => setChatMode('menu')} className="btn btn-sm text-white p-0 me-2 border-0" title="Quay lại Menu">
                   <i className="bi bi-arrow-left fs-5"></i>
                 </button>
               )}
-              <h6 className="mb-0 fw-bold"><i className="bi bi-headset me-2"></i>CSKH Du Lịch Việt</h6>
+              <h6 className="mb-0 fw-bold">
+                <i className="bi bi-headset me-2"></i> 
+                {chatMode === 'ai' ? 'Trợ lý AI' : 'CSKH Du Lịch Việt'}
+              </h6>
             </div>
             <button onClick={() => setIsOpen(false)} className="btn-close btn-close-white"></button>
           </div>
 
+          {/* NỘI DUNG CHAT */}
           {chatMode === 'menu' ? (
-            <div className="card-body bg-light d-flex flex-column align-items-center justify-content-center p-4">
-              <div className="bg-white p-3 rounded-4 shadow-sm text-center mb-4 w-100 border position-relative">
-                <div className="position-absolute top-0 start-50 translate-middle bg-white rounded-circle p-1 shadow-sm">
-                  <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="bot" style={{width: '40px'}}/>
-                </div>
-                <h5 className="fw-bold text-info mt-3 mb-2">👋 Xin chào!</h5>
-                <p className="text-muted small mb-0">
-                  Chào mừng bạn đến với Du lịch Việt. Bạn đang quan tâm đến thông tin gì ạ?
-                </p>
+            <div className="card-body bg-light d-flex flex-column align-items-center p-4">
+              <div className="bg-white p-3 rounded-4 shadow-sm text-center mb-4 w-100 border">
+                <h5 className="fw-bold text-info mb-2">👋 Xin chào!</h5>
+                <p className="text-muted small mb-0">Bạn muốn được tư vấn bằng cách nào ạ?</p>
               </div>
               
-              <div className="w-100 d-flex flex-column gap-2">
-                <button className="btn btn-outline-info rounded-pill fw-bold text-start px-4" onClick={() => handleMenuClick('/tour-trong-nuoc')}>
+              <div className="w-100 d-flex flex-column gap-3">
+                {/* NÚT AI MỚI */}
+                <button className="btn btn-primary text-white rounded-pill fw-bold shadow-sm py-2 text-start px-4 d-flex align-items-center hover-scale" onClick={startAiChat}>
+                  <i className="bi bi-robot fs-4 me-3"></i> 
+                  <div>
+                    <div className="lh-1 mb-1">Hỏi Trợ lý AI (Mới)</div>
+                    <small className="fw-normal" style={{fontSize: '11px'}}>Trả lời tự động ngay lập tức</small>
+                  </div>
+                </button>
+
+                {/* NÚT NHÂN VIÊN */}
+                <button className="btn btn-info text-white rounded-pill fw-bold shadow-sm py-2 text-start px-4 d-flex align-items-center hover-scale" onClick={startLiveChat}>
+                  <i className="bi bi-person-lines-fill fs-4 me-3"></i> 
+                  <div>
+                    <div className="lh-1 mb-1">Chat với Nhân viên</div>
+                    <small className="fw-normal" style={{fontSize: '11px'}}>Hỗ trợ trực tuyến trong giờ HC</small>
+                  </div>
+                </button>
+
+                <div className="text-center text-muted my-1 small">-- hoặc truy cập nhanh --</div>
+                <button className="btn btn-outline-secondary rounded-pill text-start px-4 small" onClick={() => handleMenuClick('/tour-trong-nuoc')}>
                   🌍 Xem danh sách Tour
-                </button>
-                <button className="btn btn-outline-info rounded-pill fw-bold text-start px-4" onClick={() => handleMenuClick('/gioi-thieu')}>
-                  📖 Giới thiệu công ty
-                </button>
-                <button className="btn btn-outline-info rounded-pill fw-bold text-start px-4" onClick={() => handleMenuClick('/lien-he')}>
-                  📞 Thông tin liên hệ
-                </button>
-                
-                <div className="text-center text-muted my-1 small">hoặc</div>
-                
-                <button className="btn btn-info text-white rounded-pill fw-bold shadow-sm py-2" onClick={startLiveChat}>
-                  <i className="bi bi-person-lines-fill me-2"></i> Chat với Nhân viên
                 </button>
               </div>
             </div>
           ) : (
             <>
               <div className="card-body" style={{ overflowY: 'auto', flexGrow: 1, backgroundColor: '#f8f9fa' }}>
-                <div className="text-center text-muted mb-3 small bg-white rounded-pill py-1 border shadow-sm mx-auto" style={{maxWidth: '80%'}}>
-                  Đã kết nối với Tổng đài viên!
-                </div>
-                
                 {chatLog.map((msg, index) => {
-                  // Logic phân Trái/Phải
-                  const iAmAdmin = currentUserRole === 'admin' || currentUserRole === 'staff';
-                  const msgFromAdmin = msg.role === 'admin' || msg.role === 'staff';
-                  const isRightSide = iAmAdmin ? msgFromAdmin : !msgFromAdmin;
+                  const isSystem = msg.role === 'system';
+                  if (isSystem) return <div key={index} className="text-center text-muted small my-2">{msg.text}</div>;
+
+                  // Logic phân Trái/Phải: Tin nhắn của MÌNH thì nằm PHẢI, của NGƯỜI KHÁC/BOT thì nằm TRÁI
+                  const isMyMessage = msg.sender === currentUser;
+                  const isBotOrStaff = msg.role === 'admin' || msg.role === 'staff' || msg.role === 'bot';
                   
                   return (
-                    <div key={index} className={`mb-3 ${isRightSide ? 'text-end' : 'text-start'}`}>
+                    <div key={index} className={`mb-3 ${isMyMessage ? 'text-end' : 'text-start'}`}>
                       <div 
-                        className={`d-inline-block p-2 px-3 rounded-4 shadow-sm ${isRightSide ? 'bg-info text-white' : msgFromAdmin ? 'bg-warning text-dark' : 'bg-white text-dark'}`} 
+                        className={`d-inline-block p-2 px-3 rounded-4 shadow-sm ${isMyMessage ? 'bg-info text-white' : isBotOrStaff ? 'bg-white border text-dark' : 'bg-secondary text-white'}`} 
                         style={{ 
                           maxWidth: '85%', 
                           textAlign: 'left',
-                          borderBottomRightRadius: isRightSide ? '4px' : '16px',
-                          borderBottomLeftRadius: !isRightSide ? '4px' : '16px'
+                          borderBottomRightRadius: isMyMessage ? '4px' : '16px',
+                          borderBottomLeftRadius: !isMyMessage ? '4px' : '16px'
                         }}
                       >
-                        <small className="d-block fw-bold mb-1" style={{ fontSize: '11px', opacity: isRightSide ? 0.9 : 0.6 }}>
-                          {msgFromAdmin ? '👨‍💻 Tư vấn viên' : msg.sender}
+                        <small className={`d-block fw-bold mb-1 ${isMyMessage ? 'text-light' : 'text-info'}`} style={{ fontSize: '11px', opacity: 0.9 }}>
+                          {isMyMessage ? 'Bạn' : msg.sender}
                         </small>
-                        <span style={{ fontSize: '14px' }}>{msg.text}</span>
+                        {/* Hỗ trợ render text có xuống dòng (\n) từ AI */}
+                        <span style={{ fontSize: '14px' }} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }}></span>
                       </div>
                       <div style={{ fontSize: '10px' }} className="text-muted mt-1 px-1">{msg.time}</div>
                     </div>
                   );
                 })}
+
+                {/* HIỆU ỨNG TYPING KHI AI ĐANG NGHĨ */}
+                {isBotTyping && (
+                  <div className="text-start mb-3">
+                    <div className="d-inline-block p-2 px-3 rounded-4 shadow-sm bg-white border">
+                      <span className="spinner-grow spinner-grow-sm text-info align-middle" role="status" aria-hidden="true" style={{width: '1rem', height: '1rem'}}></span>
+                      <small className="ms-2 text-muted fw-bold">VietBot đang suy nghĩ...</small>
+                    </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
 
@@ -173,11 +241,12 @@ function ChatWidget() {
                   <input 
                     type="text" 
                     className="form-control rounded-pill bg-light border-0 px-3" 
-                    placeholder="Nhập câu hỏi của bạn..." 
+                    placeholder={chatMode === 'ai' ? "Hỏi VietBot điều gì đó..." : "Nhập câu hỏi..."} 
                     value={message} 
                     onChange={(e) => setMessage(e.target.value)} 
+                    disabled={isBotTyping} // Khóa ô nhập khi AI đang gõ
                   />
-                  <button type="submit" className="btn btn-info text-white rounded-circle shadow-sm" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                  <button type="submit" className="btn btn-info text-white rounded-circle shadow-sm" style={{ width: '40px', height: '40px', flexShrink: 0 }} disabled={isBotTyping}>
                     <i className="bi bi-send-fill"></i>
                   </button>
                 </form>
