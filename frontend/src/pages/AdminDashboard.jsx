@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'; // ĐÃ THÊM: Thư viện vẽ biểu đồ
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import Swal from 'sweetalert2'; // IMPORT SWEETALERT2
+import * as XLSX from 'xlsx'; // IMPORT THƯ VIỆN XUẤT EXCEL
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -33,7 +35,6 @@ function AdminDashboard() {
   const [isEditingUser, setIsEditingUser] = useState(false);
   const [userFormData, setUserFormData] = useState({ _id: '', name: '', email: '', phone: '', password: '', role: 'user' });
 
-  const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [availableImages, setAvailableImages] = useState([
     'tour-1.jpg', 'tour-2.jpg', 'tour-3.jpg', 'tour-4.jpg', 'tour-5.jpg', 'tour-6.jpg',
@@ -44,9 +45,6 @@ function AdminDashboard() {
   ]);
   const [availableCategories, setAvailableCategories] = useState([]);
 
-  // ========================================================
-  // PHÂN QUYỀN: LẤY VAI TRÒ CỦA NGƯỜI ĐANG ĐĂNG NHẬP TỪ TOKEN
-  // ========================================================
   const [userRole, setUserRole] = useState('user');
 
   useEffect(() => {
@@ -54,7 +52,7 @@ function AdminDashboard() {
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUserRole(payload.role || 'user'); // Sẽ là 'admin', 'staff', hoặc 'user'
+        setUserRole(payload.role || 'user');
       } catch (e) {
         setUserRole('user');
       }
@@ -62,7 +60,6 @@ function AdminDashboard() {
     fetchData(); 
   }, []);
 
-  // Cấu hình Menu hiển thị theo quyền
   const menuItems = [
     { id: 'overview', icon: 'speedometer2', label: 'Tổng quan', roles: ['admin', 'staff'] }, 
     { id: 'tours', icon: 'map', label: 'Lịch trình Tour', roles: ['admin', 'staff'] }, 
@@ -70,12 +67,19 @@ function AdminDashboard() {
     { id: 'blogs', icon: 'journal-text', label: 'Quản lý Blog', roles: ['admin'] }, 
     { id: 'reviews', icon: 'star-half', label: 'Bình luận', roles: ['admin'] }, 
     { id: 'users', icon: 'people', label: 'Người dùng & Phân quyền', roles: ['admin'] }, 
-    { id: 'revenue', icon: 'graph-up-arrow', label: 'Doanh thu', roles: ['admin'] }
+    { id: 'revenue', icon: 'graph-up-arrow', label: 'Báo Cáo Thống Kê', roles: ['admin'] }
   ];
 
   const showNotification = (message, type = 'success') => {
-    setNotification({ visible: true, message, type });
-    setTimeout(() => setNotification({ visible: false, message: '', type: 'success' }), 3000);
+    Swal.fire({
+      icon: type === 'danger' ? 'error' : type,
+      title: type === 'danger' ? 'Lỗi' : 'Thành công',
+      text: message,
+      timer: 2500,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
   };
 
   const getAuthHeaders = () => {
@@ -110,7 +114,6 @@ function AdminDashboard() {
     }
   };
 
-  // --- LOGIC LỌC DỮ LIỆU ---
   const filteredBookings = useMemo(() => {
     const today = new Date();
     return bookings.filter(b => {
@@ -192,70 +195,70 @@ function AdminDashboard() {
     return list;
   }, [bookings, filterType, searchTerm]);
 
-  const escapeCSV = (str) => {
-    if (str === null || str === undefined) return '""';
-    const escaped = String(str).replace(/"/g, '""');
-    return `"${escaped}"`;
+  const downloadExcel = (data, fileName) => {
+    if(data.length === 0) return showNotification('Không có dữ liệu để xuất', 'warning');
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    XLSX.writeFile(workbook, `${fileName}_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.xlsx`);
+    showNotification('Tải file Excel thành công', 'success');
   };
 
-  const downloadCSV = (csvContent, fileName) => {
-    const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportUsersToExcel = () => {
+    const dataToExport = filteredUsers.map((u, i) => ({
+      "STT": i + 1,
+      "Họ Tên": u.name,
+      "Email": u.email,
+      "Số Điện Thoại": u.phone || 'N/A',
+      "Quyền Hạn": u.role === 'admin' ? 'Quản trị viên' : u.role === 'staff' ? 'Nhân viên' : 'Khách hàng'
+    }));
+    downloadExcel(dataToExport, "Danh_Sach_Nguoi_Dung");
   };
 
-  const exportUsersToCSV = () => {
-    const headers = ['STT', 'Họ Tên', 'Email', 'Số điện thoại', 'Vai trò'];
-    const csvRows = [headers.join(',')];
-    filteredUsers.forEach((u, i) => {
-      const row = [ i + 1, escapeCSV(u.name), escapeCSV(u.email), escapeCSV(u.phone || 'N/A'), escapeCSV(u.role) ];
-      csvRows.push(row.join(','));
-    });
-    downloadCSV(csvRows.join('\n'), 'Danh_Sach_Nguoi_Dung.csv');
+  const exportToursToExcel = () => {
+    const dataToExport = filteredTours.map((t, i) => ({
+      "STT": i + 1,
+      "Tên Tour": t.title,
+      "Thành Phố": t.city,
+      "Giá Bán (VNĐ)": t.price,
+      "Thời Lượng": t.duration,
+      "Danh Mục": t.category,
+      "Trạng Thái": t.featured ? 'Nổi bật' : 'Bình thường'
+    }));
+    downloadExcel(dataToExport, "Danh_Sach_Tour");
   };
 
-  const exportToursToCSV = () => {
-    const headers = ['STT', 'Tên Tour', 'Thành phố', 'Giá (VNĐ)', 'Thời lượng', 'Danh mục', 'Trạng thái'];
-    const csvRows = [headers.join(',')];
-    filteredTours.forEach((t, i) => {
-      const statusStr = t.featured ? 'Nổi bật' : 'Thường';
-      const row = [ i + 1, escapeCSV(t.title), escapeCSV(t.city), escapeCSV(t.price), escapeCSV(t.duration), escapeCSV(t.category), escapeCSV(statusStr) ];
-      csvRows.push(row.join(','));
-    });
-    downloadCSV(csvRows.join('\n'), 'Danh_Sach_Tour.csv');
+  const exportBookingsToExcel = () => {
+    const dataToExport = filteredBookings.map((b, i) => ({
+      "STT": i + 1,
+      "Mã Đơn": '#' + b._id.substring(18).toUpperCase(),
+      "Ngày Đặt": new Date(b.createdAt).toLocaleDateString('vi-VN'),
+      "Khách Hàng": b.userId?.name || b.name || 'Khách vãng lai',
+      "Số Điện Thoại": b.userId?.phone || b.phone || 'N/A',
+      "Tên Tour": b.tourId?.title || 'Tour đã xóa',
+      "Số Lượng Khách": b.guestSize,
+      "Tổng Tiền (VNĐ)": b.totalPrice,
+      "Trạng Thái": b.status === 'paid' ? 'Đã Thanh Toán' : b.status === 'cancelled' ? 'Đã Hủy' : 'Chờ Xử Lý'
+    }));
+    downloadExcel(dataToExport, "Lich_Su_Don_Dat_Tour");
   };
 
-  const exportBookingsToCSV = () => {
-    const headers = ['STT', 'Mã Đơn', 'Ngày Đặt', 'Khách Hàng', 'SĐT', 'Tên Tour', 'Tổng Tiền (VNĐ)', 'Trạng Thái'];
-    const csvRows = [headers.join(',')];
-    filteredBookings.forEach((b, i) => {
-      const statusStr = b.status === 'paid' ? 'Thành công' : b.status === 'cancelled' ? 'Đã hủy' : 'Chờ duyệt';
-      const userName = b.userId?.name || b.name || 'Khách vãng lai';
-      const userPhone = b.userId?.phone || b.phone || 'N/A';
-      const row = [ i + 1, escapeCSV('#' + b._id.substring(18).toUpperCase()), escapeCSV(new Date(b.createdAt).toLocaleDateString('vi-VN')), escapeCSV(userName), escapeCSV(userPhone), escapeCSV(b.tourId?.title || 'Tour đã xóa'), escapeCSV(b.totalPrice), escapeCSV(statusStr) ];
-      csvRows.push(row.join(','));
-    });
-    downloadCSV(csvRows.join('\n'), 'Lich_Su_Don_Hang.csv');
-  };
-
-  const exportRevenueToCSV = () => {
-    const headers = ['STT', 'Mã Đơn', 'Ngày Đặt', 'Khách Hàng', 'Tên Tour', 'Doanh Thu (VNĐ)', 'Trạng Thái'];
-    const csvRows = [headers.join(',')];
-    filteredRevenueBookings.forEach((b, i) => {
-      const userName = b.userId?.name || b.name || 'Khách vãng lai';
-      const row = [ i + 1, escapeCSV('#' + b._id.substring(18).toUpperCase()), escapeCSV(new Date(b.createdAt).toLocaleDateString('vi-VN')), escapeCSV(userName), escapeCSV(b.tourId?.title || 'Tour đã xóa'), escapeCSV(b.totalPrice), escapeCSV('Đã Thanh Toán') ];
-      csvRows.push(row.join(','));
-    });
-    downloadCSV(csvRows.join('\n'), 'Bao_Cao_Doanh_Thu_Chi_Tiet.csv');
+  const exportRevenueToExcel = () => {
+    const dataToExport = filteredRevenueBookings.map((b, i) => ({
+      "STT": i + 1,
+      "Mã Đơn": '#' + b._id.substring(18).toUpperCase(),
+      "Ngày Thanh Toán": new Date(b.createdAt).toLocaleDateString('vi-VN'),
+      "Tên Khách Hàng": b.userId?.name || b.name || 'Khách vãng lai',
+      "SĐT Liên Hệ": b.userId?.phone || b.phone || 'N/A',
+      "Tour Đã Đặt": b.tourId?.title || 'Tour đã xóa',
+      "Doanh Thu Mang Về (VNĐ)": b.totalPrice,
+      "Hình Thức": b.paymentMethod === 'vnpay' ? 'Cổng VNPay' : (b.paymentMethod === 'bank' ? 'Chuyển Khoản' : 'Tiền Mặt')
+    }));
+    downloadExcel(dataToExport, "Bao_Cao_Doanh_Thu_Chi_Tiet");
   };
 
   const handleBlogInputChange = (e) => setBlogFormData({...blogFormData, [e.target.name]: e.target.value});
+  
   const handleSubmitBlog = async (e) => {
     e.preventDefault();
     try {
@@ -269,111 +272,75 @@ function AdminDashboard() {
   };
 
   const handleDeleteBlog = async (id) => {
-    if (window.confirm('Xóa bài viết này?')) {
-      const cfg = getAuthHeaders();
-      if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
-      try { await axios.delete(`http://127.0.0.1:5000/api/blogs/${id}`, cfg); fetchData(); showNotification('Xóa bài viết thành công!', 'success'); }
-      catch (error) { showNotification(`Lỗi xóa blog`, 'danger'); }
-    }
+    Swal.fire({
+      title: 'Xóa bài viết này?',
+      text: "Hành động này không thể hoàn tác!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Đồng ý xóa'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const cfg = getAuthHeaders();
+        if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
+        try { await axios.delete(`http://127.0.0.1:5000/api/blogs/${id}`, cfg); fetchData(); showNotification('Xóa bài viết thành công!', 'success'); }
+        catch (error) { showNotification(`Lỗi xóa blog`, 'danger'); }
+      }
+    });
   };
 
   const handleDeleteReview = async (id) => {
-    if (window.confirm('Xóa bình luận này?')) {
-      try { await axios.delete(`http://127.0.0.1:5000/api/reviews/${id}`); fetchData(); showNotification('Xóa bình luận thành công!', 'success'); }
-      catch (error) { showNotification('Lỗi xóa bình luận', 'danger'); }
-    }
-  };
-
-  const stats = useMemo(() => {
-    const paid = bookings.filter(b => b.status === 'paid');
-    const totalRevenue = paid.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-    return { totalRevenue, bookingTotal: bookings.length, tourCount: tours.length, userCount: users.length, blogCount: blogs.length };
-  }, [bookings, tours, users, blogs]);
-
-  // ĐÃ THÊM: Dữ liệu tính toán cho Biểu đồ Recharts
-  const pieData = useMemo(() => {
-    return [
-      { name: 'Đã thanh toán', value: bookings.filter(b => b.status === 'paid').length },
-      { name: 'Chờ xử lý', value: bookings.filter(b => b.status === 'pending' || b.status === 'pending_confirmation').length },
-      { name: 'Đã hủy', value: bookings.filter(b => b.status === 'cancelled').length },
-    ];
-  }, [bookings]);
-  const COLORS = ['#198754', '#ffc107', '#dc3545']; // Xanh (Thành công), Vàng (Chờ), Đỏ (Hủy)
-
-  const selectedBookingStats = useMemo(() => {
-    if (!selectedBooking || !selectedBooking.tourId?._id) return null;
-    const tourId = String(selectedBooking.tourId._id);
-    const tourBookings = bookings.filter(b => String(b.tourId?._id) === tourId);
-    const bookedSeats = tourBookings
-      .filter(b => b.status !== 'cancelled')
-      .reduce((sum, b) => sum + (b.guestSize || 0), 0);
-    const pendingSeats = tourBookings
-      .filter(b => b.status === 'pending')
-      .reduce((sum, b) => sum + (b.guestSize || 0), 0);
-    const totalSeats = Number(selectedBooking.tourId.availableSeats || 0);
-    return {
-      totalSeats,
-      bookedSeats,
-      pendingSeats,
-      remainingSeats: Math.max(totalSeats - bookedSeats, 0),
-      tourBookingsCount: tourBookings.length,
-    };
-  }, [selectedBooking, bookings]);
-
-  const selectedTourStats = useMemo(() => {
-    if (!selectedTour || !selectedTour._id) return null;
-    const tourId = String(selectedTour._id);
-    const tourBookings = bookings.filter(b => String(b.tourId?._id) === tourId);
-    const bookedSeats = tourBookings
-      .filter(b => b.status !== 'cancelled')
-      .reduce((sum, b) => sum + (b.guestSize || 0), 0);
-    const pendingSeats = tourBookings
-      .filter(b => b.status === 'pending')
-      .reduce((sum, b) => sum + (b.guestSize || 0), 0);
-    const totalSeats = Number(selectedTour.availableSeats || 0);
-    const canceledSeats = tourBookings
-      .filter(b => b.status === 'cancelled')
-      .reduce((sum, b) => sum + (b.guestSize || 0), 0);
-    return {
-      totalSeats,
-      bookedSeats,
-      pendingSeats,
-      canceledSeats,
-      remainingSeats: Math.max(totalSeats - bookedSeats, 0),
-      totalBookings: tourBookings.length,
-    };
-  }, [selectedTour, bookings]);
-
-  const handleViewTour = (tour) => {
-    setSelectedTour(tour);
-  };
-
-  const handleCloseTourModal = () => {
-    setSelectedTour(null);
-  };
-
-  // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
-  const handleUpdateStatus = async (id, newStatus) => {
-    // Cho phép cả admin và staff đổi trạng thái đơn/tour
-    if (window.confirm(`Xác nhận chuyển trạng thái sang: ${newStatus === 'paid' ? 'Đã thanh toán (Hoàn tất)' : 'Đã hủy'}?`)) {
-      try { 
-        await axios.put(`http://127.0.0.1:5000/api/bookings/${id}`, { status: newStatus }); 
-        showNotification('Cập nhật trạng thái thành công!', 'success'); 
-        fetchData(); 
-        setSelectedBooking(null); 
-      } 
-      catch (error) { showNotification('Lỗi cập nhật!', 'danger'); }
-    }
+    Swal.fire({ title: 'Xóa bình luận?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Xóa' }).then(async (result) => {
+      if (result.isConfirmed) {
+        try { await axios.delete(`http://127.0.0.1:5000/api/reviews/${id}`); fetchData(); showNotification('Xóa bình luận thành công!', 'success'); }
+        catch (error) { showNotification('Lỗi xóa bình luận', 'danger'); }
+      }
+    });
   };
 
   const handleDeleteTour = async (id) => {
     if (userRole !== 'admin') return showNotification('Chỉ Admin mới có quyền xóa Tour!', 'danger');
-    if (window.confirm('Xóa tour này?')) {
-      const cfg = getAuthHeaders();
-      if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
-      try { await axios.delete(`http://127.0.0.1:5000/api/tours/${id}`, cfg); fetchData(); showNotification('Xóa tour thành công!', 'success'); } 
-      catch (error) { showNotification(`Xóa tour lỗi`, 'danger'); }
-    }
+    Swal.fire({ title: 'Xóa Tour này?', text: "Tour sẽ biến mất khỏi hệ thống!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Xóa' }).then(async (result) => {
+      if (result.isConfirmed) {
+        const cfg = getAuthHeaders();
+        if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
+        try { await axios.delete(`http://127.0.0.1:5000/api/tours/${id}`, cfg); fetchData(); showNotification('Xóa tour thành công!', 'success'); } 
+        catch (error) { showNotification(`Xóa tour lỗi`, 'danger'); }
+      }
+    });
+  };
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    let actionText = newStatus === 'paid' ? 'Đã thanh toán (Hoàn tất)' : 'Hủy đơn hàng';
+    Swal.fire({
+      title: 'Cập nhật trạng thái?',
+      text: `Chuyển đơn này sang: ${actionText}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: newStatus === 'paid' ? '#198754' : '#dc3545',
+      confirmButtonText: 'Xác nhận'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try { 
+          await axios.put(`http://127.0.0.1:5000/api/bookings/${id}`, { status: newStatus }); 
+          showNotification('Cập nhật trạng thái thành công!', 'success'); 
+          fetchData(); 
+          setSelectedBooking(null); 
+        } 
+        catch (error) { showNotification('Lỗi cập nhật!', 'danger'); }
+      }
+    });
+  };
+
+  const handleDeleteUser = async (id) => { 
+    Swal.fire({ title: 'Xóa tài khoản này?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Xóa' }).then(async (result) => {
+      if (result.isConfirmed) {
+        const cfg = getAuthHeaders();
+        if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
+        try { await axios.delete(`http://127.0.0.1:5000/api/users/${id}`, cfg); fetchData(); showNotification('Xóa user thành công!', 'success'); } catch (e) { showNotification('Lỗi xóa user!', 'danger'); } 
+      }
+    });
   };
 
   const handleInputChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
@@ -383,10 +350,7 @@ function AdminDashboard() {
   const handleStaffBookingInputChange = (e) => {
     const { name, value } = e.target;
     setStaffBookingForm(prev => {
-      const updated = {
-        ...prev,
-        [name]: name === 'guestSize' ? Number(value) : value,
-      };
+      const updated = { ...prev, [name]: name === 'guestSize' ? Number(value) : value };
       if (name === 'tourId' || name === 'guestSize') {
         const tour = tours.find(t => t._id === (name === 'tourId' ? value : prev.tourId));
         if (tour) {
@@ -400,9 +364,7 @@ function AdminDashboard() {
     });
   };
 
-  const resetStaffBookingForm = () => {
-    setStaffBookingForm({ tourId: '', name: '', email: '', phone: '', guestSize: 1, totalPrice: 0, paymentMethod: 'cash' });
-  };
+  const resetStaffBookingForm = () => { setStaffBookingForm({ tourId: '', name: '', email: '', phone: '', guestSize: 1, totalPrice: 0, paymentMethod: 'cash' }); };
 
   const handleStaffBookingSubmit = async (e) => {
     e.preventDefault();
@@ -411,21 +373,11 @@ function AdminDashboard() {
       if (!tourId || !name || !phone || !guestSize || !totalPrice) {
         return showNotification('Vui lòng điền đầy đủ thông tin đặt tour cho khách.', 'danger');
       }
-      await axios.post('http://127.0.0.1:5000/api/bookings', {
-        tourId,
-        name,
-        email,
-        phone,
-        guestSize,
-        totalPrice,
-        paymentMethod,
-      });
+      await axios.post('http://127.0.0.1:5000/api/bookings', { tourId, name, email, phone, guestSize, totalPrice, paymentMethod });
       showNotification('Đã tạo đơn đặt tour cho khách hàng.', 'success');
       resetStaffBookingForm();
       fetchData();
-    } catch (error) {
-      showNotification(error.response?.data?.message || 'Lỗi khi tạo đơn đặt tour', 'danger');
-    }
+    } catch (error) { showNotification(error.response?.data?.message || 'Lỗi khi tạo đơn đặt tour', 'danger'); }
   };
 
   const handleSubmitTour = async (e) => {
@@ -439,17 +391,10 @@ function AdminDashboard() {
     } catch (error) { showNotification(`Lưu không thành công`, 'danger'); }
   };
 
-  // Quản lý người dùng
   const handleUserInputChange = (e) => setUserFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   const resetUserForm = () => { setUserFormData({ _id: '', name: '', email: '', phone: '', password: '', role: 'user' }); setIsEditingUser(false); setShowUserForm(false); };
   const handleEditUserClick = (user) => { setUserFormData({ _id: user._id, name: user.name, email: user.email, phone: user.phone || '', password: '', role: user.role || 'user' }); setIsEditingUser(true); setShowUserForm(true); };
-  const handleDeleteUser = async (id) => { 
-    if (window.confirm('Chắc chắn xóa người dùng này?')) { 
-      const cfg = getAuthHeaders();
-      if (!cfg) return showNotification('Bạn chưa đăng nhập!', 'danger');
-      try { await axios.delete(`http://127.0.0.1:5000/api/users/${id}`, cfg); fetchData(); showNotification('Xóa user thành công!', 'success'); } catch (e) { showNotification('Lỗi xóa user!', 'danger'); } 
-    } 
-  };
+  
   const handleSubmitUser = async (e) => {
     e.preventDefault();
     try {
@@ -464,15 +409,85 @@ function AdminDashboard() {
     } catch (error) { showNotification(error.response?.data?.message || 'Lỗi lưu user!', 'danger'); }
   };
 
-  if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center"><div className="spinner-border text-info"></div></div>;
+  const handleViewTour = (tour) => { setSelectedTour(tour); };
+  const handleCloseTourModal = () => { setSelectedTour(null); };
+
+  const stats = useMemo(() => {
+    const paid = bookings.filter(b => b.status === 'paid');
+    const totalRevenue = paid.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    return { totalRevenue, bookingTotal: bookings.length, tourCount: tours.length, userCount: users.length, blogCount: blogs.length };
+  }, [bookings, tours, users, blogs]);
+
+  const pieData = useMemo(() => {
+    return [
+      { name: 'Đã thanh toán', value: bookings.filter(b => b.status === 'paid').length },
+      { name: 'Chờ xử lý', value: bookings.filter(b => b.status === 'pending' || b.status === 'pending_confirmation').length },
+      { name: 'Đã hủy', value: bookings.filter(b => b.status === 'cancelled').length },
+    ];
+  }, [bookings]);
+  const COLORS = ['#198754', '#ffc107', '#dc3545']; 
+
+  const selectedBookingStats = useMemo(() => {
+    if (!selectedBooking || !selectedBooking.tourId?._id) return null;
+    const tourId = String(selectedBooking.tourId._id);
+    const tourBookings = bookings.filter(b => String(b.tourId?._id) === tourId);
+    const bookedSeats = tourBookings.filter(b => b.status !== 'cancelled').reduce((sum, b) => sum + (b.guestSize || 0), 0);
+    const pendingSeats = tourBookings.filter(b => b.status === 'pending').reduce((sum, b) => sum + (b.guestSize || 0), 0);
+    const totalSeats = Number(selectedBooking.tourId.availableSeats || 0);
+    return { totalSeats, bookedSeats, pendingSeats, remainingSeats: Math.max(totalSeats - bookedSeats, 0), tourBookingsCount: tourBookings.length };
+  }, [selectedBooking, bookings]);
+
+  const selectedTourStats = useMemo(() => {
+    if (!selectedTour || !selectedTour._id) return null;
+    const tourId = String(selectedTour._id);
+    const tourBookings = bookings.filter(b => String(b.tourId?._id) === tourId);
+    const bookedSeats = tourBookings.filter(b => b.status !== 'cancelled').reduce((sum, b) => sum + (b.guestSize || 0), 0);
+    const pendingSeats = tourBookings.filter(b => b.status === 'pending').reduce((sum, b) => sum + (b.guestSize || 0), 0);
+    const totalSeats = Number(selectedTour.availableSeats || 0);
+    const canceledSeats = tourBookings.filter(b => b.status === 'cancelled').reduce((sum, b) => sum + (b.guestSize || 0), 0);
+    return { totalSeats, bookedSeats, pendingSeats, canceledSeats, remainingSeats: Math.max(totalSeats - bookedSeats, 0), totalBookings: tourBookings.length };
+  }, [selectedTour, bookings]);
+
+  // GIAO DIỆN SKELETON LOADING (HIỂN THỊ TRONG LÚC CHỜ CALL API)
+  if (loading) return (
+    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
+      <div className="container-fluid px-4 mt-4">
+        <div className="row g-4">
+          {/* Skeleton cho Sidebar bên trái */}
+          <div className="col-12 col-lg-3 col-xl-2">
+            <div className="skeleton shadow-sm" style={{ height: '80vh', borderRadius: '15px' }}></div>
+          </div>
+          
+          {/* Skeleton cho Nội dung chính bên phải */}
+          <div className="col-12 col-lg-9 col-xl-10">
+            <div className="skeleton mb-4" style={{ height: '40px', width: '30%', borderRadius: '8px' }}></div>
+            
+            {/* Skeleton cho 3 cái thẻ thống kê */}
+            <div className="row g-4 mb-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="col-md-4">
+                  <div className="skeleton shadow-sm" style={{ height: '120px', borderRadius: '15px' }}></div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Skeleton cho bảng biểu đồ/danh sách */}
+            <div className="row g-4">
+              <div className="col-md-6">
+                <div className="skeleton shadow-sm" style={{ height: '350px', borderRadius: '15px' }}></div>
+              </div>
+              <div className="col-md-6">
+                <div className="skeleton shadow-sm" style={{ height: '350px', borderRadius: '15px' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-light pb-5" style={{ minHeight: '100vh', position: 'relative' }}>
-      {notification.visible && (
-        <div className={`position-fixed top-0 end-0 m-3 alert alert-${notification.type} shadow`} style={{ zIndex: 2000, minWidth: '280px' }}>
-          {notification.message}
-        </div>
-      )}
       <style>{`
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1050; display: flex; justify-content: center; align-items: center; } 
         .modal-box { background: white; border-radius: 16px; width: 90%; max-width: 500px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: scaleIn 0.3s ease; } @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -494,7 +509,6 @@ function AdminDashboard() {
                 <span className="badge bg-secondary mt-2">{userRole === 'admin' ? 'Admin' : 'Staff'}</span>
               </div>
               <div className="py-2">
-                {/* Ẩn các menu mà Staff không có quyền xem */}
                 {menuItems.filter(item => item.roles.includes(userRole)).map(item => (
                   <div key={item.id} className={`p-3 cursor-pointer ${activeTab === item.id ? 'bg-info text-white' : ''}`} onClick={() => {setActiveTab(item.id); setSearchTerm('');}} style={{cursor: 'pointer'}}>
                     <i className={`bi bi-${item.icon} me-2`}></i> {item.label}
@@ -521,7 +535,6 @@ function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* ĐÃ THÊM: Biểu đồ Recharts và Phân tích */}
                 <div className="row mt-5">
                   <div className="col-md-6 mb-4">
                     <div className="card border-0 shadow-sm rounded-4 h-100 p-4">
@@ -561,16 +574,20 @@ function AdminDashboard() {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h4 className="fw-bold mb-0">{userRole === 'admin' ? 'Quản lý Tour' : 'Xem Lịch trình Tour'}</h4>
                   <div className="d-flex gap-2">
-                    {/* Nút Thêm mới chỉ dành cho Admin */}
                     {userRole === 'admin' && (
-                      <button className="btn btn-info text-white rounded-pill px-4 shadow-sm" onClick={() => setShowForm(!showForm)}>
-                        {showForm ? 'Đóng form' : '+ Thêm mới'}
-                      </button>
+                      <>
+                        <button className="btn btn-outline-success rounded-pill px-3 shadow-sm fw-bold" onClick={exportToursToExcel}>
+                          <i className="bi bi-file-earmark-excel-fill me-1"></i> Xuất Excel
+                        </button>
+                        <button className="btn btn-info text-white rounded-pill px-4 shadow-sm" onClick={() => setShowForm(!showForm)}>
+                          {showForm ? 'Đóng form' : '+ Thêm mới'}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
                 
-                {/* Form Tour (Chỉ Admin thấy) */}
+                {/* Form Tour */}
                 {showForm && userRole === 'admin' && (
                   <div className="card border-0 shadow-sm p-4 mb-4 rounded-4 border-top border-info border-4">
                     <h5 className="fw-bold mb-3">{isEditing ? 'Cập nhật Tour' : 'Thêm Tour mới'}</h5>
@@ -655,7 +672,7 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* QUẢN LÝ ĐOÀN & ĐƠN HÀNG (Cả Admin và Staff đều có quyền) */}
+            {/* QUẢN LÝ ĐOÀN & ĐƠN HÀNG */}
             {activeTab === 'bookings' && (
               <div className="animation-fade-in">
                 {(userRole === 'staff' || userRole === 'admin') && (
@@ -695,6 +712,9 @@ function AdminDashboard() {
               <div className="card border-0 shadow-sm rounded-4 p-4 overflow-hidden">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h4 className="fw-bold mb-0">Danh sách Đoàn / Khách đặt</h4>
+                  <button className="btn btn-outline-success rounded-pill px-3 shadow-sm fw-bold" onClick={exportBookingsToExcel}>
+                    <i className="bi bi-file-earmark-excel-fill me-1"></i> Xuất Excel
+                  </button>
                 </div>
                 <div className="table-responsive">
                   <table className="table table-hover align-middle small mb-0">
@@ -711,7 +731,6 @@ function AdminDashboard() {
                           <td className="fw-bold text-danger">{b.totalPrice?.toLocaleString()}đ</td>
                           <td><span className={`badge rounded-pill px-3 py-2 ${b.status === 'paid' ? 'bg-success' : b.status === 'cancelled' ? 'bg-danger' : 'bg-warning text-dark'}`}>{b.status === 'paid' ? 'Đã Thanh Toán' : b.status === 'cancelled' ? 'Đã hủy' : 'Chờ xử lý'}</span></td>
                           
-                          {/* Staff có quyền cập nhật trạng thái đơn (Hoàn tất / Hủy) */}
                           <td className="text-center">
                             <div className="d-flex justify-content-center gap-1">
                               {b.status !== 'paid' && b.status !== 'cancelled' && (
@@ -732,14 +751,19 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN (Chỉ Admin) */}
+            {/* QUẢN LÝ NGƯỜI DÙNG */}
             {activeTab === 'users' && userRole === 'admin' && (
               <div className="animation-fade-in">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h4 className="fw-bold mb-0">Phân quyền & Quản lý Người dùng</h4>
-                  <button className="btn btn-info text-white rounded-pill px-4 shadow-sm" onClick={() => {setShowUserForm(!showUserForm); setIsEditingUser(false); setUserFormData({ _id: '', name: '', email: '', phone: '', password: '', role: 'user' })}}>
-                    {showUserForm ? 'Đóng form' : '+ Thêm Tài khoản'}
-                  </button>
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-outline-success rounded-pill px-3 shadow-sm fw-bold" onClick={exportUsersToExcel}>
+                      <i className="bi bi-file-earmark-excel-fill me-1"></i> Xuất Excel
+                    </button>
+                    <button className="btn btn-info text-white rounded-pill px-4 shadow-sm" onClick={() => {setShowUserForm(!showUserForm); setIsEditingUser(false); setUserFormData({ _id: '', name: '', email: '', phone: '', password: '', role: 'user' })}}>
+                      {showUserForm ? 'Đóng form' : '+ Thêm Tài khoản'}
+                    </button>
+                  </div>
                 </div>
 
                 {showUserForm && (
@@ -751,7 +775,6 @@ function AdminDashboard() {
                         <div className="col-md-6"><label className="small fw-bold">Email</label><input type="email" className="form-control" name="email" value={userFormData.email} onChange={handleUserInputChange} disabled={isEditingUser} required /></div>
                         <div className="col-md-6"><label className="small fw-bold">Số điện thoại</label><input type="text" className="form-control" name="phone" value={userFormData.phone} onChange={handleUserInputChange} /></div>
                         
-                        {/* ĐIỂM NHẤN: Đã thêm lựa chọn "Nhân viên (Staff)" */}
                         <div className="col-md-3">
                           <label className="small fw-bold">Phân quyền</label>
                           <select className="form-select border-info" name="role" value={userFormData.role} onChange={handleUserInputChange}>
@@ -778,7 +801,6 @@ function AdminDashboard() {
                           <td className="fw-bold">{u.name}</td>
                           <td className="small">{u.email}</td>
                           <td>
-                            {/* Hiển thị màu sắc khác nhau cho từng quyền */}
                             <span className={`badge px-3 py-2 rounded-pill ${u.role === 'admin' ? 'bg-danger' : u.role === 'staff' ? 'bg-primary' : 'bg-secondary'}`}>
                               {u.role === 'admin' ? 'Admin' : u.role === 'staff' ? 'Nhân viên' : 'Khách hàng'}
                             </span>
@@ -795,7 +817,7 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* QUẢN LÝ BLOG (Chỉ Admin) */}
+            {/* QUẢN LÝ BLOG */}
             {activeTab === 'blogs' && userRole === 'admin' && (
               <div className="animation-fade-in">
                 <div className="d-flex justify-content-between align-items-center mb-4">
@@ -866,7 +888,7 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* QUẢN LÝ BÌNH LUẬN (Chỉ Admin) */}
+            {/* QUẢN LÝ BÌNH LUẬN */}
             {activeTab === 'reviews' && userRole === 'admin' && (
               <div className="animation-fade-in card border-0 shadow-sm rounded-4 p-4">
                 <h4 className="fw-bold mb-4">Quản lý Đánh giá & Bình luận</h4>
@@ -893,7 +915,7 @@ function AdminDashboard() {
               </div>
             )}
 
-            {/* BÁO CÁO DOANH THU (Chỉ Admin) */}
+            {/* BÁO CÁO DOANH THU */}
             {activeTab === 'revenue' && userRole === 'admin' && (
               <div className="animation-fade-in">
                 
@@ -911,6 +933,10 @@ function AdminDashboard() {
 
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h4 className="fw-bold mb-0 text-dark"><i className="bi bi-graph-up-arrow text-primary me-2"></i>Báo Cáo Doanh Thu</h4>
+                  {/* NÚT XUẤT EXCEL DOANH THU */}
+                  <button className="btn btn-success fw-bold shadow-sm rounded-pill px-4" onClick={exportRevenueToExcel}>
+                    <i className="bi bi-file-earmark-excel-fill me-2"></i> Xuất Báo Cáo Excel
+                  </button>
                 </div>
                 
                 <div className="row g-3 mb-4">
@@ -1013,7 +1039,7 @@ function AdminDashboard() {
         </div>
       )}
 
-      {/* MODAL CHI TIẾT ĐOÀN/ĐƠN HÀNG (Cả Admin và Staff đều xem được) */}
+      {/* MODAL CHI TIẾT ĐOÀN/ĐƠN HÀNG */}
       {selectedBooking && (
         <div className="modal-overlay" onClick={() => setSelectedBooking(null)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>

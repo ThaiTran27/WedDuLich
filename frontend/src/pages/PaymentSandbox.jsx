@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { resolveImageUrl } from '../utils/imagePath';
+import Swal from 'sweetalert2'; // <-- IMPORT THƯ VIỆN THÔNG BÁO XỊN
 
 function PaymentSandbox() {
   const { bookingId } = useParams();
@@ -10,11 +11,10 @@ function PaymentSandbox() {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  
   const [showQrInfo, setShowQrInfo] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', notes: '', paymentRate: '100', paymentMethod: 'vnpay', // Đổi mặc định sang vnpay
+    name: '', phone: '', email: '', notes: '', paymentRate: '100', paymentMethod: 'vnpay',
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -47,8 +47,14 @@ function PaymentSandbox() {
         }
       } catch (error) {
         console.error("Lỗi lấy thông tin đơn hàng:", error);
-        alert('Không tìm thấy đơn hàng. Đang quay lại trang chủ...');
-        navigate('/');
+        // SỬ DỤNG SWAL THAY CHO ALERT
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: 'Không tìm thấy đơn hàng. Đang quay lại trang chủ...',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => navigate('/'));
       } finally {
         setLoading(false);
       }
@@ -64,84 +70,98 @@ function PaymentSandbox() {
 
   const handlePayment = async () => {
     if (!formData.name || !formData.phone || !formData.email) {
-      alert('Vui lòng điền đầy đủ thông tin liên hệ bắt buộc (*)');
+      Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng điền đầy đủ thông tin liên hệ bắt buộc (*)' });
       return;
     }
     if (!termsAccepted) {
-      alert('Vui lòng đồng ý với Điều khoản và Chính sách bảo mật.');
+      Swal.fire({ icon: 'warning', title: 'Chưa đồng ý', text: 'Vui lòng đồng ý với Điều khoản và Chính sách bảo mật.' });
       return;
     }
 
-    // --- 1. XỬ LÝ THANH TOÁN VNPAY ---
     if (formData.paymentMethod === 'vnpay') {
       setProcessing(true);
       try {
         const res = await axios.post('http://127.0.0.1:5000/api/payment/create_payment_url', {
           bookingId: booking._id,
           amount: booking.totalPrice,
-          bankCode: 'NCB' // Bật sẵn ngân hàng test
+          bankCode: 'NCB'
         });
         if (res.data.success) {
-          window.location.href = res.data.paymentUrl; // Chuyển hướng sang VNPay
+          window.location.href = res.data.paymentUrl;
         }
       } catch (error) {
-        alert("Lỗi kết nối cổng thanh toán VNPAY!");
+        Swal.fire({ icon: 'error', title: 'Lỗi kết nối', text: 'Không thể kết nối cổng thanh toán VNPAY!' });
         setProcessing(false);
       }
       return;
     }
 
-    // --- 2. XỬ LÝ CHUYỂN KHOẢN VIETQR ---
     if (formData.paymentMethod === 'bank') {
       setShowQrInfo(true);
       window.scrollTo(0, 0); 
       return;
     }
 
-    // --- 3. XỬ LÝ TIỀN MẶT ---
     executePaymentAPI();
   };
 
-  // Logic gọi API lưu trạng thái nội bộ (Cho Tiền mặt và VietQR)
   const executePaymentAPI = async () => {
     setProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
       const res = await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}/pay`, {
         paymentMethod: formData.paymentMethod
       });
       
       if (res.data.success) {
         if (formData.paymentMethod === 'cash') {
-          alert('🎉 Đặt tour thành công!\nTrạng thái: Chờ xác nhận.\nVui lòng đến văn phòng của chúng tôi để hoàn tất thanh toán nhé.');
+          Swal.fire({
+            icon: 'success',
+            title: 'Đặt tour thành công!',
+            text: 'Trạng thái: Chờ xác nhận. Vui lòng đến văn phòng của chúng tôi để hoàn tất thanh toán nhé.',
+            confirmButtonColor: '#0dcaf0'
+          }).then(() => navigate('/'));
         } else {
-          alert("🎉 Đã thanh toán thành công! Cảm ơn bạn đã sử dụng dịch vụ của Du Lịch Việt.");        
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã chuyển khoản!',
+            text: 'Hệ thống sẽ kiểm tra và xác nhận đơn hàng trong giây lát. Cảm ơn bạn!',
+            confirmButtonColor: '#0dcaf0'
+          }).then(() => navigate('/'));      
         }    
-        navigate('/'); 
       }
     } catch (error) {
-      alert('Lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.');
-      console.error(error);
+      Swal.fire({ icon: 'error', title: 'Thất bại', text: 'Lỗi khi xử lý đơn hàng. Vui lòng thử lại sau.' });
     } finally {
       setProcessing(false);
     }
   };
 
   const handleCancelBooking = async () => {
-    if (window.confirm("Bạn có chắc chắn muốn hủy đặt tour? Chỗ đã giữ của bạn sẽ được hoàn trả.")) {
-      setProcessing(true);
-      try {
-        await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}`, { status: 'cancelled' });
-        alert("Đã hủy đơn đặt tour và hoàn trả chỗ thành công!");
-        navigate(-1); 
-      } catch (error) {
-        console.error(error);
-        alert("Có lỗi xảy ra khi hủy đơn!");
-      } finally {
-        setProcessing(false);
+    // SỬ DỤNG SWAL XÁC NHẬN HỦY
+    Swal.fire({
+      title: 'Bạn chắc chắn muốn hủy?',
+      text: "Chỗ đã giữ của bạn sẽ được hoàn trả vào hệ thống!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Đồng ý hủy',
+      cancelButtonText: 'Không'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setProcessing(true);
+        try {
+          await axios.put(`http://127.0.0.1:5000/api/bookings/${bookingId}`, { status: 'cancelled' });
+          Swal.fire({ icon: 'success', title: 'Đã hủy!', text: 'Đã hủy đơn đặt tour và hoàn trả chỗ thành công.', timer: 2000, showConfirmButton: false });
+          navigate(-1); 
+        } catch (error) {
+          Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Có lỗi xảy ra khi hủy đơn!' });
+        } finally {
+          setProcessing(false);
+        }
       }
-    }
+    });
   };
 
   if (loading) return <div className="vh-100 d-flex justify-content-center align-items-center bg-light"><div className="spinner-border text-primary"></div></div>;
@@ -155,6 +175,7 @@ function PaymentSandbox() {
 
   return (
     <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
+      {/* ... (Toàn bộ phần giao diện return bên dưới giữ nguyên y hệt file cũ của bạn, bạn giữ lại nhé) ... */}
       <style>
         {`
           .step-container { position: relative; display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto; }

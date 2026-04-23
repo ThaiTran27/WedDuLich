@@ -11,8 +11,12 @@ const tourSchema = new mongoose.Schema(
     availableSeats: { type: Number, required: true },
     featured: { type: Boolean, default: false },
     
-    // --- TRƯỜNG MỚI THÊM: Danh mục tour ---
+    // --- TRƯỜNG CŨ: Danh mục tour ---
     category: { type: String, default: "" }, 
+    
+    // --- TRƯỜNG MỚI THÊM (CHO BẢN ĐỒ LEAFLET) ---
+    lat: { type: Number, default: 10.762622 }, // Vĩ độ (Mặc định: Chợ Bến Thành, TP.HCM)
+    lng: { type: Number, default: 106.660172 }, // Kinh độ
     
     // Các trường bổ sung
     startDate: { type: String, default: 'Khởi hành hằng ngày' },

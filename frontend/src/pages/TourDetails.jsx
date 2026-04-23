@@ -1,7 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { resolveImageUrl } from '../../public/assets/img/index/imagePath';
+import { resolveImageUrl } from '../utils/imagePath'; // CHÚ Ý: Chỉnh lại đường dẫn này cho đúng với file utils của bạn
+import Swal from 'sweetalert2'; // Dùng thông báo xịn
+
+// --- IMPORT THƯ VIỆN BẢN ĐỒ ---
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix lỗi mất icon mặc định của Leaflet khi dùng với React/Vite
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+let DefaultIcon = L.icon({
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 
@@ -9,7 +26,7 @@ function TourDetails() {
   const { slug, id } = useParams();
   const navigate = useNavigate();
   const [tour, setTour] = useState(null);
-  const [seatStats, setSeatStats] = useState(null); // <-- ĐÃ THÊM: State lưu tình trạng ghế
+  const [seatStats, setSeatStats] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [guestSize, setGuestSize] = useState(1);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -43,7 +60,6 @@ function TourDetails() {
           axios.get(`${API_BASE_URL}/api/reviews/${tourId}`)
         ]);
 
-        // ĐÃ SỬA: Lấy cả thông tin Tour và Tình trạng ghế từ API mới
         if (tourRes.data && tourRes.data.success) {
           setTour(tourRes.data.data);
           setSeatStats(tourRes.data.seatStats); 
@@ -51,8 +67,9 @@ function TourDetails() {
           setTour(tourRes.data);
         }
 
-        // Xử lý Review
-        if (reviewRes.data && reviewRes.data.success) setReviews(reviewRes.data.data);
+        if (reviewRes.data && reviewRes.data.success) {
+          setReviews(reviewRes.data.data);
+        }
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
       } finally {
@@ -62,11 +79,10 @@ function TourDetails() {
     fetchData();
   }, [tourId]);
 
-  // Xử lý khi bấm nút Đặt Tour
   const handleBooking = async () => {
     const userString = localStorage.getItem('user');
     if (!userString) {
-      alert('Vui lòng đăng nhập để tiến hành đặt tour!');
+      Swal.fire('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để tiến hành đặt tour!', 'warning');
       navigate('/login');
       return;
     }
@@ -83,7 +99,7 @@ function TourDetails() {
         navigate(`/payment/${res.data.data._id}`, { state: { booking: res.data.data, tourData: tour } });
       }
     } catch (err) {
-      alert('Có lỗi xảy ra khi đặt tour. Vui lòng thử lại sau.');
+      Swal.fire('Lỗi', 'Có lỗi xảy ra khi đặt tour. Vui lòng thử lại sau.', 'error');
     } finally {
       setBookingLoading(false);
     }
@@ -94,26 +110,34 @@ function TourDetails() {
     e.preventDefault();
     const userString = localStorage.getItem('user');
     if (!userString) {
-      alert("Vui lòng đăng nhập để đánh giá!");
+      Swal.fire('Thông báo', 'Vui lòng đăng nhập để để lại đánh giá!', 'info');
       navigate('/login');
       return;
     }
     const user = JSON.parse(userString);
 
     try {
-      await axios.post(`${API_BASE_URL}/api/reviews`, {
+      const res = await axios.post(`${API_BASE_URL}/api/reviews`, {
         tourId: tour._id,
         userId: user.id || user._id,
         rating,
         comment
       });
-      alert("Cảm ơn bạn đã đánh giá!");
-      const newReviewRes = await axios.get(`${API_BASE_URL}/api/reviews/${tourId}`);
-      setReviews(newReviewRes.data.data);
-      setComment('');
-      setRating(5);
+      
+      if(res.data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Cảm ơn bạn!',
+            text: 'Đánh giá của bạn đã được ghi nhận.',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          setReviews([res.data.data, ...reviews]);
+          setComment('');
+          setRating(5);
+      }
     } catch (err) {
-      alert("Lỗi khi gửi đánh giá.");
+      Swal.fire('Lỗi', 'Không thể gửi đánh giá lúc này.', 'error');
     }
   };
 
@@ -129,18 +153,18 @@ function TourDetails() {
           .guest-btn { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #dee2e6; background: white; color: #495057; font-weight: bold; transition: all 0.2s; }
           .guest-btn:hover:not(:disabled) { background: #0dcaf0; color: white; border-color: #0dcaf0; }
           .guest-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-          .promo-box { border: 2px dashed #ff6b6b; background-color: #fff5f5; border-radius: 16px; padding: 20px; position: relative; }
-          .promo-title { position: absolute; top: -15px; left: 20px; background: #ff6b6b; color: white; padding: 4px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(255,107,107,0.2); }
-          .timeline { border-left: 2px dashed #0dcaf0; padding-left: 30px; margin-left: 15px; position: relative; margin-top: 30px; }
-          .timeline-item { position: relative; margin-bottom: 30px; }
-          .timeline-badge { position: absolute; left: -43px; top: 0; width: 26px; height: 26px; border-radius: 50%; background: #0dcaf0; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 4px solid #f8f9fa; box-shadow: 0 0 0 2px #0dcaf0;}
           .star-active { color: #ffc107; cursor: pointer; transition: 0.2s; }
           .star-inactive { color: #dee2e6; cursor: pointer; transition: 0.2s; }
+          .review-avatar { width: 45px; height: 45px; min-width: 45px; background: #0dcaf0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(13,202,240,0.2); }
+          
+          /* CSS CHUẨN CHO BẢN ĐỒ */
+          .map-container { height: 350px; width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid #dee2e6; z-index: 1; }
+          .leaflet-container { z-index: 1 !important; }
         `}
       </style>
 
       <div className="container">
-        <nav aria-label="breadcrumb" className="mb-3">
+        <nav aria-label="breadcrumb" className="mb-3 mt-4">
           <ol className="breadcrumb">
             <li className="breadcrumb-item"><Link to="/" className="text-decoration-none text-info">Trang chủ</Link></li>
             <li className="breadcrumb-item"><Link to="/tour-trong-nuoc" className="text-decoration-none text-info">Tour trong nước</Link></li>
@@ -166,11 +190,39 @@ function TourDetails() {
               <p className="text-secondary lh-lg">{tour.description || `Khám phá vùng đất ${tour.city} cùng Du Lịch Việt với những trải nghiệm tuyệt vời nhất.`}</p>
             </div>
 
+            {/* --- THÊM MỚI: BẢN ĐỒ VỊ TRÍ TOUR --- */}
+            <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
+              <h4 className="fw-bold border-bottom pb-3 mb-4"><i className="bi bi-map-fill text-danger me-2"></i> Vị trí trên bản đồ</h4>
+              <div className="map-container">
+                <MapContainer 
+                  center={[tour?.lat || 10.762622, tour?.lng || 106.660172]} 
+                  zoom={13} 
+                  scrollWheelZoom={false}
+                  style={{height: '100%', width: '100%'}}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker position={[tour?.lat || 10.762622, tour?.lng || 106.660172]}>
+                    <Popup>
+                      <div className="text-center">
+                        <strong className="text-info">{tour?.title}</strong> <br/>
+                        Điểm đến: {tour?.city}
+                      </div>
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+              <small className="text-muted mt-2 d-block fst-italic">* Bản đồ minh họa vị trí tương đối của điểm đến.</small>
+            </div>
+            {/* ---------------------------------- */}
+
             {/* PHẦN ĐÁNH GIÁ VÀ BÌNH LUẬN */}
             <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
               <h4 className="fw-bold border-bottom pb-3 mb-4"><i className="bi bi-star-fill text-warning me-2"></i> Đánh giá khách hàng ({reviews.length})</h4>
               
-              <div className="bg-light p-4 rounded-4 mb-5">
+              <div className="bg-light p-4 rounded-4 mb-5 border">
                 <h6 className="fw-bold mb-3">Chia sẻ trải nghiệm của bạn</h6>
                 <div className="mb-3 fs-3">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -184,39 +236,48 @@ function TourDetails() {
                   ))}
                 </div>
                 <form onSubmit={handleReviewSubmit}>
-                  <textarea className="form-control border-0 shadow-sm mb-3" rows="3" placeholder="Nhập cảm nghĩ của bạn..." value={comment} onChange={(e) => setComment(e.target.value)} required></textarea>
-                  <button type="submit" className="btn btn-primary rounded-pill px-4 fw-bold">Gửi đánh giá</button>
+                  <textarea 
+                    className="form-control border-0 shadow-sm mb-3" 
+                    rows="3" 
+                    placeholder="Chuyến đi của bạn thế nào? Hãy chia sẻ cho mọi người cùng biết nhé..." 
+                    value={comment} 
+                    onChange={(e) => setComment(e.target.value)} 
+                    required
+                  ></textarea>
+                  <button type="submit" className="btn btn-info text-white rounded-pill px-4 fw-bold shadow-sm">GỬI ĐÁNH GIÁ</button>
                 </form>
               </div>
 
               <div className="review-list">
                 {reviews.map((rev) => (
-                  <div key={rev._id} className="d-flex mb-4 pb-4 border-bottom">
-                    <div className="bg-info text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '45px', height: '45px', minWidth: '45px' }}>
-                      {rev.userId?.name?.charAt(0).toUpperCase()}
+                  <div key={rev._id} className="d-flex mb-4 pb-4 border-bottom animation-fade-in">
+                    <div className="review-avatar">
+                      {rev.userId?.name?.charAt(0).toUpperCase() || 'K'}
                     </div>
-                    <div className="ms-3">
-                      <div className="d-flex align-items-center gap-2 mb-1">
-                        <h6 className="fw-bold mb-0">{rev.userId?.name}</h6>
-                        <span className="text-warning small">
-                          {[...Array(5)].map((_, i) => (<i key={i} className={`bi bi-star${i < rev.rating ? '-fill' : ''}`}></i>))}
-                        </span>
+                    <div className="ms-3 flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <h6 className="fw-bold mb-0 text-dark">{rev.userId?.name || rev.name || 'Khách vãng lai'}</h6>
+                            <div className="text-warning small mt-1">
+                                {[...Array(5)].map((_, i) => (<i key={i} className={`bi bi-star${i < rev.rating ? '-fill' : ''} me-1`}></i>))}
+                            </div>
+                        </div>
+                        <small className="text-muted" style={{fontSize:'11px'}}>{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</small>
                       </div>
-                      <p className="text-secondary small mb-0">{rev.comment}</p>
-                      <small className="text-muted" style={{fontSize:'11px'}}>{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</small>
+                      <p className="text-secondary small mb-0 mt-2" style={{lineHeight: '1.6'}}>{rev.comment}</p>
                     </div>
                   </div>
                 ))}
-                {reviews.length === 0 && <p className="text-center text-muted fst-italic">Chưa có bình luận nào. Hãy là người đầu tiên đánh giá!</p>}
+                {reviews.length === 0 && <p className="text-center text-muted fst-italic py-4">Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ trải nghiệm!</p>}
               </div>
             </div>
           </div>
 
           <div className="col-12 col-lg-4">
             
-            {/* ĐÃ THÊM: KHỐI THỐNG KÊ TÌNH TRẠNG CHỖ NGỒI */}
+            {/* THỐNG KÊ TÌNH TRẠNG CHỖ NGỒI */}
             {seatStats && (
-              <div className="card border-0 shadow-sm rounded-4 mb-4 p-4 bg-white">
+              <div className="card border-0 shadow-sm rounded-4 mb-4 p-4 bg-white border-top border-info border-4">
                 <h6 className="fw-bold mb-3 border-bottom pb-2">
                   <i className="bi bi-pie-chart-fill text-info me-2"></i> Tình trạng chỗ ngồi
                 </h6>
@@ -227,12 +288,12 @@ function TourDetails() {
                 </div>
                 
                 <div className="d-flex justify-content-between mb-2">
-                  <span className="text-muted small">Đã thanh toán:</span>
+                  <span className="text-muted small">Đã xác nhận:</span>
                   <span className="text-success fw-bold">{seatStats.paid}</span>
                 </div>
                 
                 <div className="d-flex justify-content-between mb-3">
-                  <span className="text-muted small">Đang giữ chỗ (Chờ duyệt):</span>
+                  <span className="text-muted small">Đang giữ chỗ:</span>
                   <span className="text-warning fw-bold">{seatStats.pending}</span>
                 </div>
 
@@ -241,10 +302,10 @@ function TourDetails() {
                   <div className="progress-bar bg-warning" style={{ width: `${(seatStats.pending / seatStats.total) * 100}%` }}></div>
                 </div>
 
-                <div className="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 border">
-                  <span className="fw-bold text-secondary">Chỗ còn trống:</span>
+                <div className="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 border">
+                  <span className="fw-bold text-secondary">Còn trống:</span>
                   <span className={`fw-bold fs-4 ${seatStats.remaining > 0 ? 'text-primary' : 'text-danger'}`}>
-                    {seatStats.remaining === 0 ? 'ĐÃ HẾT CHỖ' : seatStats.remaining}
+                    {seatStats.remaining === 0 ? 'HẾT CHỖ' : seatStats.remaining}
                   </span>
                 </div>
               </div>
@@ -252,31 +313,31 @@ function TourDetails() {
 
             {/* KHỐI ĐẶT TOUR */}
             <div className="card border-0 shadow-lg rounded-4 sticky-booking overflow-hidden">
-              <div className="bg-primary p-4 text-center text-white" style={{ background: 'linear-gradient(135deg, #0dcaf0 0%, #087990 100%)' }}>
-                <h5 className="mb-1 opacity-75">GIÁ TRỌN GÓI</h5>
-                <h2 className="fw-bold mb-0 display-6">{tour.price?.toLocaleString('vi-VN')} ₫</h2>
+              <div className="p-4 text-center text-white" style={{ background: 'linear-gradient(135deg, #0dcaf0 0%, #007bff 100%)' }}>
+                <h5 className="mb-1 opacity-75 small fw-bold">GIÁ TRỌN GÓI</h5>
+                <h2 className="fw-bold mb-0">{tour.price?.toLocaleString('vi-VN')} ₫</h2>
                 <small className="opacity-75">/ 1 Hành khách</small>
               </div>
-              <div className="card-body p-4 p-md-5 bg-white">
-                <label className="fw-bold text-dark mb-3">Số lượng hành khách</label>
+              <div className="card-body p-4 bg-white">
+                <label className="fw-bold text-dark mb-3 small">SỐ LƯỢNG HÀNH KHÁCH</label>
                 <div className="d-flex align-items-center justify-content-between bg-light rounded-pill p-2 border mb-4">
                   <button className="guest-btn" onClick={() => setGuestSize(p => p > 1 ? p - 1 : 1)} disabled={seatStats?.remaining === 0}><i className="bi bi-dash"></i></button>
                   <span className="fw-bold fs-5">{guestSize}</span>
-                  {/* Chặn không cho tăng số lượng khách vượt quá số chỗ còn lại */}
                   <button className="guest-btn" onClick={() => setGuestSize(p => p < (seatStats?.remaining || 20) ? p + 1 : p)} disabled={seatStats?.remaining === 0 || guestSize >= seatStats?.remaining}><i className="bi bi-plus"></i></button>
                 </div>
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <span className="fw-bold text-secondary">Tổng cộng:</span>
+                  <span className="fw-bold text-secondary small">TỔNG CỘNG:</span>
                   <span className="fw-bold text-danger fs-3">{(tour.price * guestSize).toLocaleString('vi-VN')} ₫</span>
                 </div>
                 <button 
                   onClick={handleBooking} 
-                  disabled={bookingLoading || seatStats?.remaining === 0} 
-                  className={`btn ${seatStats?.remaining === 0 ? 'btn-secondary' : 'btn-danger'} w-100 rounded-pill py-3 fw-bold shadow fs-5`}
+                  disabled={bookingLoading || (seatStats && seatStats.remaining === 0)} 
+                  className={`btn ${seatStats?.remaining === 0 ? 'btn-secondary' : 'btn-danger'} w-100 rounded-pill py-3 fw-bold shadow-sm fs-5`}
                 >
                   {bookingLoading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-cart-check-fill me-2"></i>}
                   {seatStats?.remaining === 0 ? 'TẠM HẾT CHỖ' : 'ĐẶT TOUR NGAY'}
                 </button>
+                <p className="text-center text-muted small mt-3 mb-0"><i className="bi bi-shield-lock me-1"></i> Thanh toán an toàn qua VNPAY</p>
               </div>
             </div>
           </div>
