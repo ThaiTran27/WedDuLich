@@ -1,0 +1,21 @@
+name: Push to Docker Hub
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and Push
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:v1 ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend:v1
+# Bước kích hoạt Render tự cập nhật
+      - name: Trigger Render Deploy
+        run: curl -X GET "https://api.render.com/deploy/srv-d7mqf7aqqhas73fgk4h0?key=FGNqsq_sFnE"

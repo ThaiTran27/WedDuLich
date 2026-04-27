@@ -1,0 +1,291 @@
+body {
+  font-family: "Roboto";
+  font-weight: normal;
+  font-style: normal;
+}
+
+.font_DPTBlacksword {
+  font-family: "DPT Blacksword";
+  font-weight: bold;
+  font-style: normal;
+}
+
+/* ============================= NAVBAR ============================= */
+@media (min-width: 992px) {
+  #wrapper_header .dropdown:hover > .dropdown-menu {
+    display: block;
+    margin-top: 0;
+  }
+  #wrapper_header .dropend:hover > .dropdown-menu {
+    display: block;
+    margin-top: 0;
+    left: 100%;
+    top: 0;
+  }
+}
+
+#wrapper_header .navbar-nav .nav-link {
+  color: #fff;
+}
+
+#wrapper_header .navbar-nav .nav-link:hover {
+  color: rgb(0, 255, 255) !important;
+  transition: 0.3s ease-in-out;
+}
+/* ============================= NAVBAR ============================= */
+
+/* ============================= NAVBAR-TOGGLER ============================= */
+.hamburger {
+  cursor: pointer;
+}
+
+.hamburger input {
+  display: none;
+}
+
+.hamburger svg {
+  height: 1.6em;
+  transition: transform 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.line {
+  fill: none;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  transition: stroke-dasharray 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    stroke-dashoffset 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.line-top-bottom {
+  stroke-dasharray: 12 63;
+}
+
+.hamburger input:checked + svg {
+  transform: rotate(-45deg);
+}
+
+.hamburger input:checked + svg .line-top-bottom {
+  stroke-dasharray: 20 300;
+  stroke-dashoffset: -32.42;
+}
+/* ============================= NAVBAR-TOGGLER ============================= */
+
+/* ============================= CAROUSEL ============================= */
+#header_carousel {
+  height: 100vh;
+}
+
+#header_carousel img {
+  object-fit: cover;
+  width: 100%;
+  height: 100vh;
+}
+
+#header_carousel .carousel-caption {
+  top: 20%;
+}
+
+#header_carousel .carousel-caption h3 {
+  font-size: 55px;
+}
+/* ============================= CAROUSEL ============================= */
+
+/* ============================= HEADER SEARCHBAR ============================= */
+@keyframes searchbarfloat {
+  0% {
+    bottom: -30%;
+    opacity: 0;
+  }
+  100% {
+    bottom: -5%;
+    opacity: 1;
+  }
+}
+
+.header_searchbar {
+  bottom: -5%;
+  left: 50%;
+  animation: 1.8s ease-out searchbarfloat;
+}
+/* ============================= HEADER SEARCHBAR ============================= */
+/* ============================= Search ============================= */
+.divider {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background-color: #e0e0e0;
+}
+
+.divider::after {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 4px;
+  background-color: orange;
+}
+.card-tour {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  box-shadow: 1px 1px 10px 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+.card-tour:hover {
+  background-color: #f7f7f7;
+}
+
+.card-tour-header {
+  overflow: hidden;
+}
+
+.card-tour-header img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  transition: all 1s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.card-tour-header img:hover {
+  transform: scale(1.2);
+}
+
+.card-tour-body {
+  flex: 1;
+  padding: 8px 16px;
+}
+.card-tour-body a {
+  color: unset;
+  text-decoration: none;
+}
+
+.card-tour-body a:hover {
+  text-decoration: underline;
+}
+
+.card-tour-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding-bottom: 12px;
+}
+.card-tour-link {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: orange;
+  text-decoration: none;
+
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
+
+  transition: all 1.5s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+}
+
+.card-tour-link:hover {
+  background-color: orange;
+  color: white;
+}
+
+
+/* ============================= Search ============================= */
+
+/* ============================= CONTENT DESTINATION ============================= */
+.content_destination .box_img {
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.content_destination .box_img img {
+  scale: 1;
+  transition: scale 2s;
+}
+
+.content_destination .box_img:hover img {
+  scale: 1.2;
+}
+
+.content_destination .box_img .img_dark {
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.content_destination .box_img:hover .img_dark {
+  opacity: 0.5;
+}
+
+.content_destination .box_img .img_title {
+  opacity: 0;
+  top: 65%;
+  transition: opacity 1.5s ease-in-out, top 1s ease-in-out;
+}
+
+.content_destination .box_img:hover .img_title {
+  top: 50%;
+  opacity: 1;
+}
+/* ============================= CONTENT DESTINATION ============================= */
+
+/* ============================= FOOTER ============================= */
+#wrapper_footer p {
+  font-size: 16px;
+}
+
+#wrapper_footer a {
+  color: black;
+  text-decoration: none;
+}
+/* ============================= FOOTER ============================= */
+.content_newTour .cards-wrapper {
+  display: flex;
+  justify-content: center;
+}
+.content_newTour .card img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.content_newTour .card {
+  margin: 0 0.5em;
+  box-shadow: 2px 6px 8px 0 rgba(22, 22, 26, 0.18);
+  border: none;
+  border-radius: 20px;
+}
+.content_newTour .carousel-inner {
+  padding: 1em;
+}
+.content_newTour .carousel-control-prev,
+.content_newTour .carousel-control-next {
+  background-color: #000;
+  width: 5vh;
+  height: 5vh;
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.content_newTour .card .card-title {
+  display: inline-block;
+  height: 120px;
+}
+
+.content_newTour .card .card-text {
+  display: inline-block;
+  height: 220px;
+}
+
+@media (min-width: 768px) {
+  .content_newTour .card img {
+    height: 11em;
+  }
+}
+
+.tour_quocte {
+  background-image: url("../img/index/pexels-marcus-nguyen-328033-980221.jpg");
+}
+
