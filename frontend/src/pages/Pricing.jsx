@@ -1,78 +1,263 @@
-function Pricing() {
+import React, { useState } from 'react';
+
+// Toàn bộ giao diện và hiệu ứng nằm trong 1 file duy nhất
+const Pricing = () => {
+  // --- 1. PHẦN LOGIC XỬ LÝ SỰ KIỆN ---
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCar, setSelectedCar] = useState("");
+  const [formData, setFormData] = useState({ name: "", phone: "", date: "" });
+
+  // Hàm mở form khi nhấn nút
+  const handleOpenBooking = (carType) => {
+    setSelectedCar(carType);
+    setShowModal(true);
+  };
+
+  // Hàm xử lý khi bấm gửi form
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert(`🎉 Cảm ơn ${formData.name}!\nYêu cầu đặt [${selectedCar}] vào ngày ${formData.date} đã được ghi nhận.\nChúng tôi sẽ gọi lại cho bạn qua SĐT ${formData.phone} trong ít phút tới.`);
+    setShowModal(false); // Ẩn form đi
+    setFormData({ name: "", phone: "", date: "" }); // Xóa dữ liệu cũ
+  };
+
+  // --- 2. PHẦN GIAO DIỆN ---
   return (
-    <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
-      <div className="container mt-5">
-        <div className="text-center mb-5">
-          <h6 className="text-info fw-bold">DỊCH VỤ ĐI KÈM</h6>
-          <h2 className="fw-bold display-5">Bảng Giá Thuê Xe Du Lịch</h2>
-          <p className="text-muted fs-5">Cam kết dàn xe đời mới, tài xế kinh nghiệm, giá cả minh bạch.</p>
+    <div className="pricing-wrapper">
+      {/* PHẦN CSS - Viết trực tiếp vào đây */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .pricing-wrapper {
+          background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+          padding: 80px 20px;
+          min-height: 100vh;
+          font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .header-box { text-align: center; margin-bottom: 60px; }
+
+        .sub-badge {
+          background: #e0f2fe; color: #0ea5e9; padding: 8px 20px;
+          border-radius: 50px; font-weight: 700; font-size: 14px;
+          display: inline-block; margin-bottom: 15px; text-transform: uppercase;
+        }
+
+        .main-title { font-size: 2.8rem; font-weight: 800; color: #1e293b; margin-bottom: 20px; }
+
+        .pricing-container {
+          max-width: 1200px; margin: 0 auto; display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; padding: 10px;
+        }
+
+        .price-card {
+          background: white; border-radius: 30px; padding: 40px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid #f1f5f9; position: relative; display: flex;
+          flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .price-card:hover {
+          transform: translateY(-15px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); border-color: #38bdf8;
+        }
+
+        .price-card.popular {
+          background: linear-gradient(165deg, #ffffff 0%, #f0f9ff 100%);
+          border: 2px solid #0ea5e9; transform: scale(1.05); z-index: 2;
+        }
+        
+        .price-card.popular:hover { transform: translateY(-15px) scale(1.05); }
+
+        .hot-tag {
+          position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+          background: linear-gradient(90deg, #f43f5e, #e11d48); color: white;
+          padding: 6px 20px; border-radius: 50px; font-size: 14px; font-weight: 700;
+          box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+        }
+
+        .card-type { font-size: 1.5rem; font-weight: 700; color: #334155; margin-bottom: 20px; }
+
+        .price-value { margin-bottom: 30px; }
+        .price-value .amount { font-size: 3rem; font-weight: 800; color: #0ea5e9; }
+        .price-value .unit { color: #64748b; font-size: 1rem; }
+
+        .feature-list { list-style: none; padding: 0; margin: 0 0 40px 0; text-align: left; flex-grow: 1; }
+        .feature-item { display: flex; align-items: center; margin-bottom: 15px; color: #475569; font-size: 1.05rem; }
+
+        .check-icon {
+          width: 22px; height: 22px; background: #f0fdf4; color: #22c55e;
+          border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          margin-right: 12px; font-size: 14px; flex-shrink: 0;
+        }
+
+        .cta-button {
+          width: 100%; padding: 16px; border-radius: 16px; border: 2px solid #0ea5e9;
+          background: transparent; color: #0ea5e9; font-size: 1.1rem; font-weight: 700;
+          cursor: pointer; transition: all 0.3s;
+        }
+
+        .price-card.popular .cta-button { background: #0ea5e9; color: white; }
+        .price-card:hover .cta-button { background: #0ea5e9; color: white; box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3); }
+
+        .note-text { margin-top: 50px; color: #94a3b8; font-style: italic; text-align: center; }
+
+        @media (max-width: 768px) {
+          .price-card.popular { transform: scale(1); }
+          .main-title { font-size: 2rem; }
+        }
+
+        /* --- CSS CHO MODAL ĐẶT XE --- */
+        .modal-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+          display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .booking-modal {
+          background: white; padding: 40px; border-radius: 24px;
+          width: 90%; max-width: 450px; position: relative;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          animation: modalFadeIn 0.3s ease-out forwards;
+        }
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: translateY(30px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .close-btn {
+          position: absolute; top: 20px; right: 20px; font-size: 28px;
+          background: none; border: none; color: #94a3b8; cursor: pointer; transition: 0.2s;
+        }
+        .close-btn:hover { color: #f43f5e; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; font-weight: 600; color: #334155; margin-bottom: 8px; }
+        .form-group input {
+          width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px;
+          font-size: 1rem; outline: none; transition: 0.3s; box-sizing: border-box;
+        }
+        .form-group input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); }
+        .submit-btn {
+          width: 100%; padding: 16px; background: #0ea5e9; color: white; border: none;
+          border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.3s;
+        }
+        .submit-btn:hover { background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
+      `}} />
+
+      <div className="container">
+        {/* Header */}
+        <div className="header-box">
+          <span className="sub-badge">Dịch vụ chuyên nghiệp</span>
+          <h2 className="main-title">Bảng Giá Thuê Xe Du Lịch</h2>
+          <p style={{ color: '#64748b', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
+            Dàn xe đời mới, tài xế kinh nghiệm, cam kết mang lại trải nghiệm an toàn nhất.
+          </p>
         </div>
 
-        <div className="row g-4 justify-content-center">
-          {/* Card 1 */}
-          <div className="col-md-4">
-            <div className="card border-0 shadow-sm rounded-4 h-100 text-center hover-scale transition-all">
-              <div className="card-header bg-white border-0 pt-5 pb-3">
-                <h4 className="fw-bold">Xe 4 - 7 Chỗ</h4>
-                <div className="display-5 fw-bold text-info my-3">800.000 ₫</div>
-                <p className="text-muted small">/ Ngày (Giao động theo lịch trình)</p>
-              </div>
-              <div className="card-body px-4 pb-5">
-                <ul className="list-unstyled text-start text-secondary mb-4">
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Xe đời mới (Vios, Xpander, Innova)</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Đã bao gồm lương tài xế</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Không bao gồm phí cầu đường</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Nước suối & Khăn lạnh miễn phí</li>
-                </ul>
-                <button className="btn btn-outline-info rounded-pill w-100 fw-bold py-2">Liên hệ đặt xe</button>
-              </div>
+        {/* Pricing Grid */}
+        <div className="pricing-container">
+          
+          {/* Xe 4-7 Chỗ */}
+          <div className="price-card">
+            <h3 className="card-type">Xe 4 - 7 Chỗ</h3>
+            <div className="price-value">
+              <span className="amount">800k</span>
+              <span className="unit"> / ngày</span>
             </div>
+            <ul className="feature-list">
+              <li className="feature-item"><span className="check-icon">✓</span> Xe Vios, Xpander, Innova đời mới</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Đã bao gồm lương tài xế</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Miễn phí khăn lạnh, nước suối</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Tài xế nhiệt tình, đúng giờ</li>
+            </ul>
+            {/* THÊM SỰ KIỆN ONCLICK VÀO NÚT NÀY */}
+            <button className="cta-button" onClick={() => handleOpenBooking("Xe 4 - 7 Chỗ")}>LIÊN HỆ ĐẶT XE</button>
           </div>
 
-          {/* Card 2 (Nổi bật) */}
-          <div className="col-md-4">
-            <div className="card border-info shadow-lg rounded-4 h-100 text-center position-relative">
-              <span className="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger px-4 py-2 fs-6">Phổ biến nhất</span>
-              <div className="card-header bg-info text-white border-0 pt-5 pb-3 rounded-top-4">
-                <h4 className="fw-bold">Xe 16 Chỗ</h4>
-                <div className="display-5 fw-bold my-3">1.500.000 ₫</div>
-                <p className="small opacity-75">/ Ngày (Giao động theo lịch trình)</p>
-              </div>
-              <div className="card-body px-4 pb-5 mt-3">
-                <ul className="list-unstyled text-start text-secondary mb-4">
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Xe Ford Transit, Hyundai Solati</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Ghế ngả cao cấp, không gian rộng</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Tặng nón du lịch và nước suối</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Phù hợp cho nhóm gia đình, công ty</li>
-                </ul>
-                <button className="btn btn-info text-white rounded-pill w-100 fw-bold py-2 shadow-sm">Liên hệ đặt xe ngay</button>
-              </div>
+          {/* Xe 16 Chỗ - PHỔ BIẾN */}
+          <div className="price-card popular">
+            <div className="hot-tag">🔥 Phổ biến nhất</div>
+            <h3 className="card-type">Xe 16 Chỗ</h3>
+            <div className="price-value">
+              <span className="amount">1.5Tr</span>
+              <span className="unit"> / ngày</span>
             </div>
+            <ul className="feature-list">
+              <li className="feature-item"><span className="check-icon">✓</span> <b>Ford Transit, Hyundai Solati</b></li>
+              <li className="feature-item"><span className="check-icon">✓</span> Ghế ngả cao cấp, cực rộng</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Tặng nón du lịch cao cấp</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Phù hợp đoàn gia đình, công ty</li>
+            </ul>
+            {/* THÊM SỰ KIỆN ONCLICK VÀO NÚT NÀY */}
+            <button className="cta-button" onClick={() => handleOpenBooking("Xe 16 Chỗ")}>ĐẶT XE NGAY</button>
           </div>
 
-          {/* Card 3 */}
-          <div className="col-md-4">
-            <div className="card border-0 shadow-sm rounded-4 h-100 text-center hover-scale transition-all">
-              <div className="card-header bg-white border-0 pt-5 pb-3">
-                <h4 className="fw-bold">Xe 29 - 45 Chỗ</h4>
-                <div className="display-5 fw-bold text-info my-3">2.800.000 ₫</div>
-                <p className="text-muted small">/ Ngày (Giao động theo lịch trình)</p>
-              </div>
-              <div className="card-body px-4 pb-5">
-                <ul className="list-unstyled text-start text-secondary mb-4">
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Xe Thaco, Universe đời mới nhất</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Hệ thống Karaoke giải trí trên xe</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Hầm hành lý siêu rộng</li>
-                  <li className="mb-3"><i className="bi bi-check-circle-fill text-success me-2"></i> Chuyên phục vụ teambuilding</li>
-                </ul>
-                <button className="btn btn-outline-info rounded-pill w-100 fw-bold py-2">Liên hệ đặt xe</button>
-              </div>
+          {/* Xe 29-45 Chỗ */}
+          <div className="price-card">
+            <h3 className="card-type">Xe 29 - 45 Chỗ</h3>
+            <div className="price-value">
+              <span className="amount">2.8Tr</span>
+              <span className="unit"> / ngày</span>
             </div>
+            <ul className="feature-list">
+              <li className="feature-item"><span className="check-icon">✓</span> Dàn xe Universe đời mới nhất</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Hệ thống Karaoke giải trí</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Hầm hành lý siêu rộng</li>
+              <li className="feature-item"><span className="check-icon">✓</span> Chuyên Teambuilding đoàn lớn</li>
+            </ul>
+            {/* THÊM SỰ KIỆN ONCLICK VÀO NÚT NÀY */}
+            <button className="cta-button" onClick={() => handleOpenBooking("Xe 29 - 45 Chỗ")}>LIÊN HỆ BÁO GIÁ</button>
           </div>
+
         </div>
+
+        <p className="note-text">
+          * Lưu ý: Giá có thể thay đổi tùy vào lộ trình và thời điểm lễ Tết.
+        </p>
       </div>
+
+      {/* --- 3. GIAO DIỆN MODAL ĐẶT XE (Sẽ hiện ra khi bấm nút) --- */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="booking-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
+            <h2 style={{ color: '#0ea5e9', marginBottom: '5px', marginTop: 0 }}>Xác nhận đặt xe</h2>
+            <p style={{ color: '#64748b', marginBottom: '25px' }}>Dịch vụ: <b>{selectedCar}</b></p>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Họ và tên người đặt</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Ví dụ: Trần Văn Thái"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Số điện thoại liên hệ</label>
+                <input 
+                  type="tel" 
+                  required 
+                  placeholder="Nhập số điện thoại"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>Ngày khởi hành dự kiến</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                />
+              </div>
+              
+              <button type="submit" className="submit-btn">GỬI YÊU CẦU</button>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
-}
+};
 
 export default Pricing;
