@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function About() {
   return (
     <div className="bg-white pt-5">
@@ -11,14 +13,14 @@ function About() {
               Được xây dựng với tư duy tối ưu hóa trải nghiệm người dùng (UX/UI), <strong>Du lịch Việt</strong> không chỉ là một nền tảng đặt tour trực tuyến. Chúng tôi là cầu nối đưa du khách đến với những giá trị văn hóa chân thực nhất. Từ vẻ đẹp thanh bình, mộc mạc của miền Tây sông nước cho đến sự hùng vĩ của núi rừng Tây Bắc, mọi hành trình đều được thiết kế tỉ mỉ.
             </p>
             <div className="d-flex gap-3 mt-4">
-              <button className="btn btn-info text-white rounded-pill px-4 py-2 fw-bold shadow-sm">Khám phá ngay</button>
-              <button className="btn btn-outline-dark rounded-pill px-4 py-2 fw-bold">Liên hệ đội ngũ</button>
+              <Link to="/tour-trong-nuoc" className="btn btn-info text-white rounded-pill px-4 py-2 fw-bold shadow-sm">Khám phá ngay</Link>
+              <Link to="/lien-he" className="btn btn-outline-dark rounded-pill px-4 py-2 fw-bold">Liên hệ đội ngũ</Link>
             </div>
           </div>
           <div className="col-lg-6 position-relative">
             {/* Ảnh ghép nghệ thuật */}
-            <img src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=600&q=80" alt="Miền Tây" className="img-fluid rounded-4 shadow-lg position-relative z-1" style={{ width: '80%', marginLeft: '20%' }} />
-            <img src="https://images.unsplash.com/photo-1555921015-c2848f1c26e4?auto=format&fit=crop&w=400&q=80" alt="Việt Nam" className="img-fluid rounded-4 shadow-lg position-absolute border border-5 border-white" style={{ width: '50%', bottom: '-10%', left: '0', zIndex: 2 }} />
+            <img src="/assets/img/images.jpg" alt="Miền Tây" className="img-fluid rounded-4 shadow-lg position-relative z-1" style={{ width: '80%', marginLeft: '20%' }} />
+            <img src="/assets/img/download.jpg" alt="Việt Nam" className="img-fluid rounded-4 shadow-lg position-absolute border border-5 border-white" style={{ width: '50%', bottom: '-10%', left: '0', zIndex: 2 }} />
           </div>
         </div>
       </div>

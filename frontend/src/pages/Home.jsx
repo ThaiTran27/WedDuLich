@@ -7,7 +7,10 @@ import AOS from 'aos';
 import 'aos/dist/aos.css'; 
 
 function Home() {
+  const [allTours, setAllTours] = useState([]);
   const [featuredTours, setFeaturedTours] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +25,9 @@ function Home() {
       try {
         const res = await axios.get(`${API_BASE_URL}/api/tours`);
         if (res.data.success) {
-          setFeaturedTours(res.data.data.filter(t => t.featured).slice(0, 6));
+          const tours = res.data.data || [];
+          setAllTours(tours);
+          setFeaturedTours(tours.filter(t => t.featured).slice(0, 6));
         }
       } catch (error) {
         console.error("Lỗi lấy tour:", error);
@@ -32,6 +37,33 @@ function Home() {
     };
     fetchTours();
   }, []);
+
+  const filterTours = (query) => {
+    const search = query.trim().toLowerCase();
+    if (!search) return [];
+
+    return allTours.filter((tour) => {
+      const fields = [
+        tour.title,
+        tour.city,
+        tour.duration,
+        tour.description,
+        tour.category,
+      ];
+      return fields.some((field) => String(field || '').toLowerCase().includes(search));
+    });
+  };
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchQuery(value);
+    setSearchResults(filterTours(value));
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    setSearchResults(filterTours(searchQuery));
+  };
 
   return (
     <div className="homepage-wrapper">
@@ -196,18 +228,77 @@ function Home() {
             <p className="fs-5 text-white opacity-90 mb-5 d-none d-md-block fw-light" style={{maxWidth: '650px', lineHeight: '1.8'}}>
               Du Lịch Việt đồng hành cùng bạn trên mọi hành trình khám phá những miền đất mới. Hãy để chúng tôi kể tiếp câu chuyện trải nghiệm của bạn.
             </p>
-            <div className="search-box">
+            <form className="search-box" onSubmit={handleSearchSubmit}>
               <div className="d-flex align-items-center flex-grow-1 px-4">
                 <i className="bi bi-geo-alt text-info fs-4 me-3"></i>
-                <input type="text" className="form-control border-0 bg-transparent shadow-none" placeholder="Bạn muốn đi du lịch ở đâu?..." />
+                <input
+                  type="text"
+                  className="form-control border-0 bg-transparent shadow-none"
+                  placeholder="Bạn muốn đi du lịch ở đâu?..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
               </div>
-              <Link to="/tra-cuu" className="btn btn-info text-white rounded-pill px-5 py-3 fw-bold shadow-sm">
+              <button type="submit" className="btn btn-info text-white rounded-pill px-5 py-3 fw-bold shadow-sm">
                 TÌM KIẾM
-              </Link>
-            </div>
+              </button>
+            </form>
           </div>
         </div>
       </section>
+
+      {searchQuery.trim() !== '' && (
+        <section className="py-5 bg-white">
+          <div className="container">
+            <div className="d-flex justify-content-between align-items-center mb-4" data-aos="fade-up">
+              <div>
+                <h2 className="fw-bold mb-1 text-dark" style={{ fontSize: '2.4rem' }}>Kết quả tìm kiếm</h2>
+                <p className="text-muted mb-0">Hiển thị tour liên quan đến "{searchQuery}"</p>
+              </div>
+              <div className="text-muted small">
+                {searchResults.length > 0 ? `${searchResults.length} tour tìm được` : 'Không tìm thấy tour phù hợp'}
+              </div>
+            </div>
+
+            <div className="row g-4">
+              {searchResults.length > 0 ? (
+                searchResults.map((tour) => (
+                  <div className="col-12 col-md-6 col-lg-4" key={tour._id} data-aos="fade-up">
+                    <div className="tour-card">
+                      <div className="tour-img-box">
+                        <img src={resolveImageUrl(tour.image)} alt={tour.title} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=500&q=80'; }} />
+                      </div>
+                      <div className="p-4 d-flex flex-column flex-grow-1">
+                        <div className="d-flex justify-content-between align-items-center mb-2 small text-muted fw-bold">
+                          <span><i className="bi bi-geo-alt text-info me-1"></i> {tour.city}</span>
+                          <span><i className="bi bi-calendar3 text-info me-1"></i> {tour.duration}</span>
+                        </div>
+                        <h5 className="fw-bold mb-3 text-dark flex-grow-1" style={{ lineHeight: '1.6', fontSize: '1.25rem' }}>{tour.title}</h5>
+                        <p className="text-muted small mb-3" style={{ minHeight: '48px' }}>{tour.description || 'Tour chuyên nghiệp, chất lượng cao.'}</p>
+                        <div className="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
+                          <div>
+                            <small className="text-muted d-block" style={{ fontSize: '11px', fontWeight: '700' }}>Giá từ</small>
+                            <span className="fw-bold text-danger fs-5">{tour.price?.toLocaleString()} đ</span>
+                          </div>
+                          <Link to={`/tours/id/${tour._id}`} className="btn btn-info text-white rounded-pill px-4 py-2 fw-bold shadow-sm">
+                            Chi tiết
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-12">
+                  <div className="alert alert-warning mb-0" role="alert">
+                    Không tìm thấy tour phù hợp với từ khóa "{searchQuery}". Vui lòng thử lại với từ khóa khác.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 2. KHỐI TÍNH NĂNG */}
       <section className="py-5" style={{ backgroundColor: '#f8fafc', position: 'relative', zIndex: 10 }}>
@@ -256,7 +347,7 @@ function Home() {
             <div className="col-lg-6" data-aos="fade-right">
               <Link to="/tour-trong-nuoc" state={{category: 'Miền Tây'}} className="text-decoration-none">
                 <div className="destination-card">
-                  <img src="https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop" alt="Miền Tây" />
+                  <img src="/assets/img/du-lich-mien-tay-mua-nao-dep-nhat.jpg" alt="Miền Tây" />
                   <div className="destination-overlay">
                     <span className="badge bg-info text-white mb-2 align-self-start shadow-sm px-3 py-2">Hào Sảng Sông Nước</span>
                     <h3 className="fw-bold mb-1">Miền Tây Thân Thương</h3>
@@ -270,7 +361,7 @@ function Home() {
                 <div className="col-sm-6" data-aos="fade-down">
                   <Link to="/tour-trong-nuoc" state={{category: 'Miền Bắc'}} className="text-decoration-none">
                     <div className="destination-card">
-                      <img src="https://images.unsplash.com/photo-1599708153386-62bf3f035ca2?q=80&w=2070&auto=format&fit=crop" alt="Miền Bắc" />
+                      <img src="/assets/img/Mai-Chau-2-e2bc2.jpg" alt="Miền Bắc" />
                       <div className="destination-overlay">
                         <h4 className="fw-bold mb-1">Tây Bắc Mù Sương</h4>
                         <p className="mb-0 opacity-90 small">Hùng vĩ núi non</p>
@@ -281,7 +372,7 @@ function Home() {
                 <div className="col-sm-6" data-aos="fade-up" data-aos-delay="100">
                   <Link to="/tour-trong-nuoc" state={{category: 'Đảo'}} className="text-decoration-none">
                     <div className="destination-card">
-                      <img src="https://images.unsplash.com/photo-1555921015-c262078696eb?q=80&w=2070&auto=format&fit=crop" alt="Biển Đảo" />
+                      <img src="/assets/img/binh-dinh.jpg" alt="Biển Đảo" />
                       <div className="destination-overlay">
                         <h4 className="fw-bold mb-1">Thiên Đường Biển</h4>
                         <p className="mb-0 opacity-90 small">Cát trắng nắng vàng</p>

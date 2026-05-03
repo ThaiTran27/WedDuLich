@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 function Policy() {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('dat-tour');
 
-  // Bắt tín hiệu từ Navbar gửi sang để mở đúng Tab
   useEffect(() => {
     if (location.state && location.state.tab) {
       setActiveTab(location.state.tab);
     }
   }, [location.state]);
 
-  // Danh sách các Tab
   const tabs = [
     { id: 'dat-tour', title: 'Hướng dẫn đặt tour', icon: 'bi-hand-index-thumb' },
     { id: 'thanh-toan', title: 'Hướng dẫn thanh toán', icon: 'bi-credit-card' },
@@ -21,8 +19,79 @@ function Policy() {
     { id: 'faq', title: 'Câu hỏi thường gặp', icon: 'bi-question-circle' }
   ];
 
+  const faqItems = [
+    {
+      id: 'faq1',
+      question: 'Trẻ em có được giảm giá không?',
+      answer: 'Có. Trẻ em dưới 2 tuổi miễn phí. Trẻ từ 2 - 5 tuổi tính 50% vé. Trẻ từ 6 - 11 tuổi tính 75% vé. Từ 12 tuổi trở lên tính vé người lớn.',
+    },
+    {
+      id: 'faq2',
+      question: 'Tôi có thể thay đổi ngày khởi hành không?',
+      answer: 'Bạn có thể thay đổi ngày khởi hành miễn phí nếu báo trước ít nhất 7 ngày so với ngày khởi hành ban đầu (tùy thuộc vào tình trạng chỗ trống của tour mới).',
+    },
+    {
+      id: 'faq3',
+      question: 'Có được phép hủy đơn tour không?',
+      answer: 'Có, chúng tôi chấp nhận hủy đơn tour theo chính sách: Hủy trước 7 ngày hoàn tiền 100%, hủy 3-6 ngày hoàn tiền 50%, hủy trong 48h không hoàn tiền.',
+    },
+    {
+      id: 'faq4',
+      question: 'Tour có bảo hiểm du lịch không?',
+      answer: 'Vâng, tất cả các tour của Du Lịch Việt đều đi kèm bảo hiểm du lịch trọn gói để bảo vệ quyền lợi của khách hàng.',
+    },
+    {
+      id: 'faq5',
+      question: 'Tôi cần chuẩn bị giấy tờ gì?',
+      answer: 'Vui lòng mang theo CMND/CCCD/Passport và các giấy tờ cần thiết khác. Nếu có thẻ cộng hòa xã hội, bảo hiểm y tế cũng nên mang theo.',
+    },
+    {
+      id: 'faq6',
+      question: 'Thời gian tối đa để đăng ký tour là bao lâu?',
+      answer: 'Bạn có thể đăng ký tour từ 1 ngày trước khi khởi hành (tùy thuộc vào tình trạng chỗ trống). Chúng tôi khuyến khích đăng ký sớm để được chọn phòng và lịch trình tốt hơn.',
+    },
+  ];
+
   return (
     <div className="bg-light pb-5" style={{ minHeight: '100vh' }}>
+      <style>{`
+        .animation-fade-in {
+          animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .accordion-button:not(.collapsed) {
+          background-color: #0dcaf0 !important;
+          color: white !important;
+          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.125);
+        }
+        .accordion-button:focus {
+          box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+          border-color: #0dcaf0;
+        }
+        .accordion-item {
+          border: 1px solid #dee2e6 !important;
+        }
+        .list-group-item.active {
+          background-color: #0dcaf0 !important;
+          border-color: #0dcaf0 !important;
+        }
+        .accordion-button {
+          padding: 15px 20px;
+          font-size: 0.95rem;
+        }
+        .accordion-body {
+          padding: 20px;
+        }
+      `}</style>
       
       {/* Banner nhỏ */}
       <div className="bg-info text-white text-center py-5 mb-5 shadow-sm" style={{ background: 'linear-gradient(135deg, #0dcaf0 0%, #087990 100%)' }}>
