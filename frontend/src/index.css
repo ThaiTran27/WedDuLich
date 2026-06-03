@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================================
+   1. ĐẨY NỘI DUNG XUỐNG ĐỂ KHÔNG BỊ NAVBAR ĐÈ (CHUẨN NHẤT)
+   ======================================================== */
+body {
+  padding-top: 85px; 
+}
+
+@media (max-width: 991px) {
+  body {
+    padding-top: 75px; 
+  }
+}
+
+/* ========================================================
+   2. FIX LỖI TAILWIND ĐÁ BOOTSTRAP (ÉP HIỆN MENU DESKTOP)
+   ======================================================== */
+@media (min-width: 992px) {
+  .navbar-expand-lg .navbar-collapse {
+    display: flex !important; /* Bắt buộc dàn hàng ngang trên máy tính */
+    flex-basis: auto;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .navbar-toggler {
+    display: none !important; /* Giấu nút 3 gạch trên máy tính */
+  }
+
+  .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important; /* Chữ trắng mờ nhẹ cho sang */
+    display: block;
+  }
+  
+  .nav-link:hover, .nav-link.active {
+    color: #0dcaf0 !important; /* Di chuột vào sáng màu xanh lên */
+    opacity: 1;
+  }
+}
+
+@media (max-width: 991px) {
+  .navbar-toggler {
+    display: block !important;
+  }
+
+  .navbar-collapse.mobile-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #212529;
+    z-index: 1030;
+    width: 100%;
+    padding: 1rem 0;
+  }
+
+  .navbar-collapse.mobile-menu.collapse {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .navbar-collapse.mobile-menu.collapse.show {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .navbar-collapse.mobile-menu.show {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .navbar-collapse.mobile-menu .navbar-nav {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .navbar-collapse.mobile-menu .nav-link,
+  .navbar-collapse.mobile-menu .dropdown-item {
+    color: #fff !important;
+    padding: 0.7rem 1rem;
+  }
+
+  .navbar-collapse.mobile-menu .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    float: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: transparent !important;
+  }
+}
+
+/* ========================================================
+   3. TINH CHỈNH KÍCH THƯỚC NAVBAR
+   ======================================================== */
+.navbar {
+  min-height: 70px;
+  z-index: 1040 !important; /* Mức z-index an toàn để luôn nổi lên trên cùng */
+  transition: all 0.3s ease;
+}
+
+.navbar-brand {
+  font-size: 1.8rem !important;
+  margin-right: 2rem;
+}
+
+.nav-link {
+  font-size: 0.95rem !important;
+  margin: 0 0.2rem;
+}
+/* =========================================
+   HIỆU ỨNG SKELETON LOADING CAO CẤP
+   ========================================= */
+.skeleton {
+  background-color: #e2e5e7;
+  background-image: linear-gradient(
+    90deg, 
+    rgba(255, 255, 255, 0), 
+    rgba(255, 255, 255, 0.5), 
+    rgba(255, 255, 255, 0)
+  );
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  display: inline-block;
+  line-height: 1;
+  width: 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}

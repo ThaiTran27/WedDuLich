@@ -1,0 +1,25 @@
+.rounded_boder {
+  border-radius: 20px;
+}
+
+.title_booking {
+  padding: 3px 5px;
+  border-radius: 20px 20px 0px 0px;
+  background-color: rgb(158, 208, 240);
+}
+
+.title_booking01 {
+  padding: 3px 10px;
+  text-align: center;
+  border-radius: 20px 20px 0px 0px;
+  background-color: rgb(225, 164, 86);
+}
+
+.btn-hv:hover {
+  transform: translateY(-5px);
+  background-color: rgb(235, 58, 58);
+}
+
+.Gia input[type="text"] {
+  width: 50%;
+}

@@ -1,0 +1,14 @@
+@media (min-width: 1200px){
+    form{
+        width: 100%;
+        max-width: 500px;
+        margin: 150px auto;
+    }
+}
+@media (max-width: 768px){
+    form{
+        width: 100%;
+        margin: 0 auto;
+        margin: 50px auto;
+    }
+}

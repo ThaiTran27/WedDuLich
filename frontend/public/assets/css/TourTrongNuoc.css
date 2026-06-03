@@ -1,0 +1,166 @@
+.divider {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background-color: #e0e0e0;
+}
+
+.divider::after {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 4px;
+  background-color: orange;
+}
+
+.card-tour {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  box-shadow: 1px 1px 10px 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+.card-tour:hover {
+  background-color: #f7f7f7;
+}
+
+.card-tour-header {
+  overflow: hidden;
+}
+
+.card-tour-header img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  transition: all 1s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.card-tour-header img:hover {
+  transform: scale(1.2);
+}
+
+.card-tour-body {
+  flex: 1;
+  padding: 8px 16px;
+}
+.card-tour-body a {
+  color: unset;
+  text-decoration: none;
+}
+
+.card-tour-body a:hover {
+  text-decoration: underline;
+}
+
+.card-tour-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding-bottom: 12px;
+}
+.card-tour-link {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: orange;
+  text-decoration: none;
+
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
+
+  transition: all 1.5s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+}
+
+.card-tour-link:hover {
+  background-color: orange;
+  color: white;
+}
+
+
+
+
+
+.col-4 div:hover {
+  background-color: gainsboro;
+}
+
+.card:hover {
+  background-color: #f7f7f7;
+}
+
+.load_more_MienBac button,
+.load_more_MienTrung button,
+.load_more_MienNam button {
+  background-color: #9dc6f3; /* Màu nền */
+  color: #fff; /* Màu chữ */
+  border: none; /* Bỏ viền */
+  padding: 10px 20px; /* Kích thước padding */
+  border-radius: 5px; /* Bo tròn các góc */
+  cursor: pointer; /* Con trỏ khi di chuột vào */
+  font-size: 16px; /* Kích thước chữ */
+  display: block; /* Hiển thị block */
+  margin: 0 auto; /* Căn giữa theo chiều ngang */
+  margin-top: 20px; /* Khoảng cách từ trên xuống */
+}
+
+#link_to_MB,
+#link_to_MT,
+#link_to_MN {
+  text-decoration: none;
+  color: rgb(134, 133, 133);
+}
+
+#link_to_MB:hover,
+#link_to_MT:hover,
+#link_to_MN:hover {
+  color: rgb(14, 13, 13);
+}
+
+.content_newTour .cards-wrapper {
+  display: flex;
+  justify-content: center;
+}
+.content_newTour .card img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.content_newTour .card {
+  margin: 0 0.5em;
+  box-shadow: 2px 6px 8px 0 rgba(22, 22, 26, 0.18);
+  border: none;
+  border-radius: 20px;
+}
+.content_newTour .carousel-inner {
+  padding: 1em;
+}
+.content_newTour .carousel-control-prev,
+.content_newTour .carousel-control-next {
+  background-color: #000;
+  width: 5vh;
+  height: 5vh;
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.content_newTour .card .card-title {
+  display: inline-block;
+  height: 120px;
+}
+
+.content_newTour .card .card-text {
+  display: inline-block;
+  height: 220px;
+}
+
+@media (min-width: 768px) {
+  .content_newTour .card img {
+    height: 11em;
+  }
+}
+
